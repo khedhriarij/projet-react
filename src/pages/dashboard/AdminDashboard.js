@@ -4,6 +4,8 @@ import { useAuthContext } from '../../hooks/useAuthContext';
 import { useAdmin } from '../../hooks/UseAdmin';
 import { useCourseContext } from '../../context/CourContext';
 import './admindashboard.css';
+import { Link } from 'react-router-dom';
+
 
 const CourseDescription = ({ description }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -351,6 +353,15 @@ const AdminDashboard = () => {
               <span className="nav-label">Gestion des Cours</span>
             </button>
             
+           
+<button 
+  className={`nav-item ${activeTab === 'quizzes' ? 'active' : ''}`}
+  onClick={() => setActiveTab('quizzes')}
+>
+  <span className="nav-icon">🎯</span>
+  <span className="nav-label">Gestion des Quiz</span>
+</button>
+
             <button 
               className={`nav-item ${activeTab === 'users' ? 'active' : ''}`}
               onClick={() => setActiveTab('users')}
@@ -511,17 +522,31 @@ const AdminDashboard = () => {
 
             {/* Gestion des Cours */}
             {activeTab === 'courses' && (
-              <div className="courses-tab">
-                <div className="tab-header">
-                  <h2>Gestion des Cours ({courses.length} cours)</h2>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={handleNewCourseClick}
-                  >
-                    + Nouveau Cours
-                  </button>
-                </div>
-
+  <div className="courses-tab">
+    <div className="tab-header">
+      <h2>Gestion des Cours ({courses.length} cours)</h2>
+      <div style={{ display: 'flex', gap: '15px' }}>
+        <button 
+          className="btn btn-primary"
+          onClick={handleNewCourseClick}
+        >
+          + Nouveau Cours
+        </button>
+        {/* BOUTON POUR CRÉER UN QUIZ */}
+        <Link 
+          to="/admin/quiz/create" 
+          className="btn btn-primary"
+          style={{ 
+            textDecoration: 'none', 
+            display: 'flex', 
+            alignItems: 'center',
+            padding: '10px 20px'
+          }}
+        >
+          🎯 Créer un Quiz
+        </Link>
+      </div>
+    </div>
                 {/* MODAL DE CRÉATION DE COURS */}
                 {showNewCourseForm && (
                   <div className="modal-overlay">
@@ -565,17 +590,121 @@ const AdminDashboard = () => {
                         </div>
                         
                         <div className="form-group">
-                          <label>Formateur *</label>
-                          <input
-                            type="text"
-                            name="instructor"
-                            value={newCourse.instructor}
-                            onChange={handleInputChange}
-                            required
-                            placeholder="Ex: Ahmed Ben Ali"
-                          />
-                        </div>
+  <label>Formateur *</label>
+  <input
+    type="text"
+    name="instructor"
+    value={newCourse.instructor}
+    onChange={handleInputChange}
+    required
+    placeholder="Ex: Ahmed Ben Ali"
+  />
+</div>
 
+{/* SECTION IMAGE AVEC OPTIONS PAR DÉFAUT */}
+<div className="form-group">
+  <label>Image du cours</label>
+  
+  {/* Champ URL */}
+  <input
+    type="url"
+    name="image"
+    value={newCourse.image}
+    onChange={handleImageUrlChange}
+    placeholder="https://exemple.com/image.jpg"
+    style={{marginBottom: '15px'}}
+  />
+  
+  {/* Images prédéfinies rapides */}
+  <div style={{marginBottom: '15px'}}>
+    <small style={{color: '#666', display: 'block', marginBottom: '8px'}}>
+      Ou choisir une image prédéfinie :
+    </small>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '8px'
+    }}>
+      {defaultImages.map((img, index) => (
+        <div
+          key={index}
+          onClick={() => handleSelectDefaultImage(img.url)}
+          style={{
+            border: newCourse.image === img.url ? '3px solid var(--primary-color)' : '2px solid #ddd',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            cursor: 'pointer',
+            background: '#f8f9fa',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <div 
+            style={{
+              width: '100%',
+              height: '60px',
+              backgroundImage: `url(${img.url})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+            onError={(e) => {
+              console.log('❌ Image non trouvée:', img.url);
+              e.target.style.background = '#ffcccc';
+            }}
+          ></div>
+          <div style={{
+            padding: '4px',
+            textAlign: 'center',
+            fontSize: '0.7em',
+            background: newCourse.image === img.url ? 'var(--primary-color)' : 'transparent',
+            color: newCourse.image === img.url ? 'white' : '#666'
+          }}>
+            {img.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* Aperçu de l'image */}
+  {newCourse.image && (
+    <div style={{
+      marginTop: '10px',
+      textAlign: 'center',
+      padding: '10px',
+      background: '#f8f9fa',
+      borderRadius: '6px',
+      border: '1px solid #e9ecef'
+    }}>
+      <strong>Aperçu :</strong>
+      <div style={{
+        width: '120px',
+        height: '80px',
+        margin: '10px auto',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        overflow: 'hidden'
+      }}>
+        <img 
+          src={newCourse.image} 
+          alt="Aperçu" 
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+          onError={(e) => {
+            console.log('❌ Erreur de chargement de l\'image:', newCourse.image);
+            e.target.src = '/images/default-course.jpg';
+          }}
+        />
+      </div>
+    </div>
+  )}
+  
+  <small style={{color: '#666', fontSize: '0.8em'}}>
+    Entrez une URL d'image ou choisissez une option rapide
+  </small>
+</div>
                         {/* SECTION IMAGE AVEC OPTIONS PAR DÉFAUT */}
                         <div className="form-group">
                           <label>Image du cours</label>
@@ -1051,4 +1180,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default AdminDashboard; 

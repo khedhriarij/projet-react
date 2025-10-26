@@ -1,8 +1,9 @@
-// pages/course/CourseDetail.js - VERSION FINALE CORRIGÉE
+// pages/course/CourseDetail.js - VERSION CORRIGÉE
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../hooks/useAuthContext';
 import { useCoursePurchase } from '../../hooks/useCoursePurchase';
+import { useQuizContext } from '../../context/QuizContext';
 import './coursedetail.css';
 
 // Données mock pour le cours
@@ -88,16 +89,98 @@ const mockCourse = {
   ]
 };
 
+// Composant pour afficher les quiz du cours
+const CourseQuizzes = ({ courseId }) => {
+  const { getQuizzesByCourse, getQuizAttempts } = useQuizContext();
+  const navigate = useNavigate();
+  
+  const quizzes = getQuizzesByCourse(courseId);
+
+  if (quizzes.length === 0) {
+    return (
+      <div className="no-quizzes">
+        <div className="no-quizzes-icon">📝</div>
+        <h3>Aucun quiz disponible</h3>
+        <p>Les quiz pour ce cours seront bientôt disponibles.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="course-quizzes">
+      <div className="quizzes-header">
+        <h2>🎯 Quiz & Évaluations</h2>
+        <p>Testez vos connaissances et validez votre apprentissage</p>
+      </div>
+
+      <div className="quizzes-grid">
+        {quizzes.map(quiz => {
+          const attempts = getQuizAttempts(quiz.id);
+          const bestAttempt = attempts.length > 0 
+            ? Math.max(...attempts.map(a => a.percentage))
+            : null;
+
+          const isPassed = bestAttempt && bestAttempt >= quiz.passingScore;
+
+          return (
+            <div key={quiz.id} className="quiz-card">
+              <div className="quiz-info">
+                <h3>{quiz.title}</h3>
+                <p>{quiz.description}</p>
+                
+                <div className="quiz-meta">
+                  <span>⏱️ {quiz.duration} min</span>
+                  <span>❓ {quiz.questions.length} questions</span>
+                  <span>🎯 {quiz.passingScore}% pour réussir</span>
+                </div>
+
+                {bestAttempt && (
+                  <div className="quiz-progress">
+                    <span>Meilleur score: <strong>{bestAttempt}%</strong></span>
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${bestAttempt}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="quiz-actions">
+                <button 
+                  onClick={() => navigate(`/quiz/${quiz.id}`)}
+                  className={`btn ${bestAttempt ? 'btn-secondary' : 'btn-primary'}`}
+                >
+                  {bestAttempt ? '🔄 Repasser le quiz' : '🚀 Commencer le quiz'}
+                </button>
+                
+                {bestAttempt && (
+                  <span className={`quiz-status ${isPassed ? 'passed' : 'failed'}`}>
+                    {isPassed ? '✅ Réussi' : '❌ À améliorer'}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Composant principal CourseDetail
 export default function CourseDetail() {
   const { id } = useParams();
-  // eslint-disable-next-line no-unused-vars
-  const { user } = useAuthContext(); // ← AJOUT DU COMMENTAIRE POUR IGNORER LE WARNING
+  // Supprimez l'import non utilisé ou utilisez-le
+  const { user } = useAuthContext(); // Maintenant utilisé dans l'affichage
   const { purchaseCourse, hasPurchasedCourse, updateCourseProgress, isProcessing } = useCoursePurchase();
   
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(0);
   const [completedLessons, setCompletedLessons] = useState([]);
+  const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' | 'resources' | 'quizzes'
 
   const isPurchased = hasPurchasedCourse(parseInt(id));
   const discount = course ? Math.round(((course.originalPrice - course.price) / course.originalPrice) * 100) : 0;
@@ -110,7 +193,6 @@ export default function CourseDetail() {
     }, 1000);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handlePurchase = async () => {
@@ -209,6 +291,13 @@ export default function CourseDetail() {
                 <span className="rating-count">({course.students} avis)</span>
               </div>
 
+              {/* Affichage du nom de l'utilisateur connecté */}
+              {user && (
+                <div className="user-welcome">
+                  <p>👋 Bonjour, <strong>{user.displayName || user.email}</strong> ! Prêt à apprendre ?</p>
+                </div>
+              )}
+
               {isPurchased && (
                 <div className="progress-section">
                   <div className="progress-bar-large">
@@ -266,112 +355,166 @@ export default function CourseDetail() {
         </div>
       </div>
 
-      {/* Course Content */}
-      <div className="course-content-section">
-        <div className="content-grid">
-          {/* Lessons Sidebar */}
-          <div className="lessons-sidebar">
-            <div className="sidebar-header">
-              <h3>Contenu du cours</h3>
-              <span>{course.lessons.length} leçons • {course.duration}</span>
-            </div>
-            <div className="lessons-list">
-              {course.lessons.map((lesson, index) => {
-                const isLocked = !canAccessLesson(lesson);
-                const isCompleted = completedLessons.includes(lesson.id);
-                
-                return (
-                  <div
-                    key={lesson.id}
-                    className={`lesson-item ${selectedLesson === index ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
-                    onClick={() => !isLocked && setSelectedLesson(index)}
-                  >
-                    <div className="lesson-number">
-                      {isCompleted ? '✓' : index + 1}
-                    </div>
-                    <div className="lesson-info">
-                      <h4>
-                        {lesson.title}
-                        {lesson.premium && <span className="premium-badge">PREMIUM</span>}
-                      </h4>
-                      <span className="lesson-duration">{lesson.duration}</span>
-                    </div>
-                    {isLocked && <span className="locked-icon">🔒</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Lesson Content */}
-          <div className="lesson-content">
-            {currentLesson && (
-              <>
-                <div className="video-container">
-                  <iframe
-                    src={currentLesson.videoUrl}
-                    title={currentLesson.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-
-                <div className="lesson-header">
-                  <h2>{currentLesson.title}</h2>
-                  <div className="lesson-meta">
-                    Leçon {selectedLesson + 1} sur {course.lessons.length} • {currentLesson.duration}
-                  </div>
-                </div>
-
-                <div className="lesson-summary">
-                  <h3>Description</h3>
-                  <p>{currentLesson.description}</p>
-
-                  <div className="learning-objectives">
-                    <h4>Objectifs d'apprentissage</h4>
-                    <ul>
-                      {currentLesson.objectives.map((objective, idx) => (
-                        <li key={idx}>• {objective}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {isPurchased && canAccessLesson(currentLesson) && (
-                    <button
-                      onClick={handleLessonComplete}
-                      className={`complete-btn ${completedLessons.includes(currentLesson.id) ? 'completed' : ''}`}
-                    >
-                      {completedLessons.includes(currentLesson.id) 
-                        ? '✅ Leçon terminée' 
-                        : 'Marquer comme terminée'}
-                    </button>
-                  )}
-
-                  {!canAccessLesson(currentLesson) && (
-                    <div style={{
-                      background: '#fff3cd',
-                      border: '1px solid #ffeaa7',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      textAlign: 'center'
-                    }}>
-                      <p>🔒 Cette leçon est réservée aux étudiants ayant acheté le cours.</p>
-                      <button 
-                        onClick={handlePurchase}
-                        className="purchase-btn"
-                        style={{marginTop: '10px'}}
-                      >
-                        Acheter le cours pour débloquer
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+      {/* Navigation par onglets */}
+      <div className="course-tabs-container">
+        <div className="course-tabs">
+          <button 
+            className={`tab-btn ${activeTab === 'lessons' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lessons')}
+          >
+            📚 Leçons
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`}
+            onClick={() => setActiveTab('resources')}
+          >
+            📎 Ressources
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'quizzes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('quizzes')}
+          >
+            🎯 Quiz & Évaluations
+          </button>
         </div>
       </div>
+
+      {/* Contenu des onglets */}
+      {activeTab === 'lessons' && (
+        <div className="course-content-section">
+          <div className="content-grid">
+            {/* Lessons Sidebar */}
+            <div className="lessons-sidebar">
+              <div className="sidebar-header">
+                <h3>Contenu du cours</h3>
+                <span>{course.lessons.length} leçons • {course.duration}</span>
+              </div>
+              <div className="lessons-list">
+                {course.lessons.map((lesson, index) => {
+                  const isLocked = !canAccessLesson(lesson);
+                  const isCompleted = completedLessons.includes(lesson.id);
+                  
+                  return (
+                    <div
+                      key={lesson.id}
+                      className={`lesson-item ${selectedLesson === index ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                      onClick={() => !isLocked && setSelectedLesson(index)}
+                    >
+                      <div className="lesson-number">
+                        {isCompleted ? '✓' : index + 1}
+                      </div>
+                      <div className="lesson-info">
+                        <h4>
+                          {lesson.title}
+                          {lesson.premium && <span className="premium-badge">PREMIUM</span>}
+                        </h4>
+                        <span className="lesson-duration">{lesson.duration}</span>
+                      </div>
+                      {isLocked && <span className="locked-icon">🔒</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Lesson Content */}
+            <div className="lesson-content">
+              {currentLesson && (
+                <>
+                  <div className="video-container">
+                    <iframe
+                      src={currentLesson.videoUrl}
+                      title={currentLesson.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+
+                  <div className="lesson-header">
+                    <h2>{currentLesson.title}</h2>
+                    <div className="lesson-meta">
+                      Leçon {selectedLesson + 1} sur {course.lessons.length} • {currentLesson.duration}
+                    </div>
+                  </div>
+
+                  <div className="lesson-summary">
+                    <h3>Description</h3>
+                    <p>{currentLesson.description}</p>
+
+                    <div className="learning-objectives">
+                      <h4>Objectifs d'apprentissage</h4>
+                      <ul>
+                        {currentLesson.objectives.map((objective, idx) => (
+                          <li key={idx}>• {objective}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {isPurchased && canAccessLesson(currentLesson) && (
+                      <button
+                        onClick={handleLessonComplete}
+                        className={`complete-btn ${completedLessons.includes(currentLesson.id) ? 'completed' : ''}`}
+                      >
+                        {completedLessons.includes(currentLesson.id) 
+                          ? '✅ Leçon terminée' 
+                          : 'Marquer comme terminée'}
+                      </button>
+                    )}
+
+                    {!canAccessLesson(currentLesson) && (
+                      <div className="locked-lesson-message">
+                        <p>🔒 Cette leçon est réservée aux étudiants ayant acheté le cours.</p>
+                        <button 
+                          onClick={handlePurchase}
+                          className="purchase-btn"
+                        >
+                          Acheter le cours pour débloquer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'quizzes' && (
+        <CourseQuizzes courseId={course.id} />
+      )}
+
+      {activeTab === 'resources' && (
+        <div className="resources-tab">
+          <div className="resources-content">
+            <h2>📎 Ressources du Cours</h2>
+            <div className="resources-list">
+              <div className="resource-item">
+                <h3>📖 Documentation React</h3>
+                <p>Documentation officielle de React sur les Hooks</p>
+                <a href="https://reactjs.org/docs/hooks-intro.html" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+                  📥 Télécharger
+                </a>
+              </div>
+              <div className="resource-item">
+                <h3>💻 Code Source des Exemples</h3>
+                <p>Tous les exemples de code du cours</p>
+                <button className="btn btn-secondary">
+                  📥 Télécharger
+                </button>
+              </div>
+              <div className="resource-item">
+                <h3>🎬 Vidéos Supplémentaires</h3>
+                <p>Contenu bonus et cas pratiques avancés</p>
+                <button className="btn btn-secondary">
+                  📥 Télécharger
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Course Info Sections */}
       <div className="course-info-sections">
