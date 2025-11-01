@@ -1,12 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import './App.css';
-import QuizList from './components/Quiz/QuizList';
+
+
+// Context
 import { CourseProvider } from './context/CourContext'; 
 import { QuizProvider } from './context/QuizContext';
-import QuizPlayer from './components/Quiz/QuizPlayer';
-import QuizResults from './components/Quiz/QuizResults';
-import QuizBuilder from './components/Quiz/QuizBuilder';
+
+
+import QuizList from './components/Quiz/QuizList.jsx';
+import QuizPlayer from './components/Quiz/QuizPlayer.jsx';
+import QuizResults from './components/Quiz/QuizResults.jsx';
+import QuizBuilder from './components/Quiz/QuizBuilder.jsx';
+import QuizManagement from './components/Quiz/QuizManagement.jsx';
+
+// Pages
 import UserDashboard from './pages/dashboard/UserDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Dashboard from './pages/dashboard/Dashboard';
@@ -21,7 +29,6 @@ import MyCourses from './pages/my-courses/MyCourses';
 // Import des composants UI
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import Header from './components/Quiz/Header';
 import OnlineUsers from './components/OnlineUsers';
 
 // Import des hooks et composants de protection
@@ -62,18 +69,14 @@ function App() {
           <BrowserRouter>
             {user && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
             <div className='container'>
-              <Header /> 
+             
               <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
               <Routes>
                 {/* Route principale - Redirection intelligente */}
                 <Route 
                   path="/" 
                   element={
-                    user ? (
-                      <Navigate to="/catalog" replace /> 
-                    ) : (
-                      <Navigate to="/login" replace />
-                    )
+                    user ? <Navigate to="/catalog" replace /> : <Navigate to="/login" replace />
                   } 
                 />
                 
@@ -93,7 +96,7 @@ function App() {
                   element={user ? <UserDashboard /> : <Navigate to="/login" replace />} 
                 />
                 
-                {/* Dashboard original (gardé pour compatibilité) */}
+                {/* Dashboard original */}
                 <Route 
                   path="/dashboard" 
                   element={
@@ -131,21 +134,12 @@ function App() {
                   element={user ? <MyCourses /> : <Navigate to="/login" replace />} 
                 />
                 
-                {/* Gestion des Quiz */}
+                {/* ✅ CORRECTION : Routes Quiz optimisées sans doublons */}
                 <Route 
-                  path="/admin/quizzes" 
+                  path="/admin/quiz/*" 
                   element={
                     <AdminRoute>
-                      <QuizList />
-                    </AdminRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/admin/quiz/create" 
-                  element={
-                    <AdminRoute>
-                      <QuizBuilder />
+                      <QuizManagement />
                     </AdminRoute>
                   } 
                 />
@@ -161,7 +155,7 @@ function App() {
                   element={user ? <QuizResults /> : <Navigate to="/login" replace />} 
                 />
                 
-                {/* Login - OUVERT DIRECTEMENT */}
+                {/* Login */}
                 <Route 
                   path="/login" 
                   element={!user ? <Login /> : <Navigate to="/" replace />} 
@@ -181,6 +175,19 @@ function App() {
                 <Route 
                   path="*" 
                   element={<Navigate to="/" replace />} 
+                />
+                
+                <Route 
+                  path="/quiz-builder" 
+                  element={
+                    <AdminRoute>
+                      <QuizBuilder />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/quiz-list" 
+                  element={user ? <QuizList /> : <Navigate to="/login" replace />} 
                 />
               </Routes>
             </div>
