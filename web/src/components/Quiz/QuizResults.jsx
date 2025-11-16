@@ -49,7 +49,7 @@ export default function QuizResults() {
         </Link>
         {isPassed && (
           <button className="btn btn-success">
-            📜 Télécharger le certificat
+             Télécharger le certificat
           </button>
         )}
       </div>

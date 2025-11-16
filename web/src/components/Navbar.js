@@ -5,7 +5,7 @@ import { useAuthContext } from '../hooks/useAuthContext'
 
 //styles & images
 import './Navbar.css'
-import Temple from '../assets/temple.svg'
+import logo from '../assets/logo.png'
 
 export default function Navbar({ onMenuClick }){
   
@@ -19,14 +19,14 @@ export default function Navbar({ onMenuClick }){
         {user && (
           <li>
             <button className='menu-button' onClick={onMenuClick}>
-              ☰ Menu
+              Menu
             </button>
           </li>
         )}
 
         <li className='logo'>
-          <img src={Temple} alt="platforme logo"/>
-          <span>platforme educative</span>
+          <img src={logo} alt="platforme logo"/>
+          <span>LearnUp Platform</span>
         </li>
 
         {!user && (
