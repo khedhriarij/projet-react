@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import { AuthContextProvider } from './context/AuthContext';
+import './styles/index.css';
+import App from './views/App';
+import { AuthContextProvider } from './viewmodels/context/AuthContext';
 
 
 ReactDOM.render(
