@@ -1,4 +1,4 @@
-// src/context/QuizContext.js - VERSION CORRIGÉE
+// src/viewmodels/context/QuizContext.js
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const QuizContext = createContext();
@@ -14,14 +14,17 @@ export const useQuizContext = () => {
 export const QuizProvider = ({ children }) => {
   const [quizzes, setQuizzes] = useState([]);
   const [quizAttempts, setQuizAttempts] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false); // ✅ Nouvel état pour suivre l'initialisation
 
   // Charger depuis localStorage
   useEffect(() => {
     const savedQuizzes = localStorage.getItem('eduplatform_quizzes');
     const savedAttempts = localStorage.getItem('eduplatform_quiz_attempts');
+    const savedInitialized = localStorage.getItem('eduplatform_quizzes_initialized');
     
     if (savedQuizzes) setQuizzes(JSON.parse(savedQuizzes));
     if (savedAttempts) setQuizAttempts(JSON.parse(savedAttempts));
+    if (savedInitialized) setIsInitialized(JSON.parse(savedInitialized));
   }, []);
 
   // Sauvegarder dans localStorage
@@ -33,20 +36,34 @@ export const QuizProvider = ({ children }) => {
     localStorage.setItem('eduplatform_quiz_attempts', JSON.stringify(quizAttempts));
   }, [quizAttempts]);
 
+  useEffect(() => {
+    localStorage.setItem('eduplatform_quizzes_initialized', JSON.stringify(isInitialized));
+  }, [isInitialized]);
+
   // Mémoized functions
   const calculateTotalPoints = useCallback((questions) => {
     return questions.reduce((total, question) => total + (question.points || 1), 0);
   }, []);
 
-  // DÉPLACER getQuizById AVANT les fonctions qui l'utilisent
   const getQuizById = useCallback((quizId) => {
     return quizzes.find(quiz => quiz.id === quizId);
   }, [quizzes]);
 
-  // Fonction pour associer un quiz à un cours
+  // Fonction pour vérifier si un quiz existe déjà
+  const quizExists = useCallback((courseId, title) => {
+    return quizzes.some(quiz => quiz.courseId === courseId && quiz.title === title);
+  }, [quizzes]);
+
+  // Fonction pour associer un quiz à un cours (avec vérification de doublon)
   const addQuizToCourse = useCallback((courseId, quizData) => {
+    // Vérifier si le quiz existe déjà
+    if (quizExists(courseId, quizData.title)) {
+      console.log(`Quiz "${quizData.title}" existe déjà pour le cours ${courseId}`);
+      return null; // Ne pas créer de doublon
+    }
+
     const newQuiz = {
-      id: `quiz_${Date.now()}`,
+      id: `quiz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // ID plus unique
       courseId: courseId,
       ...quizData,
       createdAt: new Date().toISOString(),
@@ -57,7 +74,7 @@ export const QuizProvider = ({ children }) => {
     };
     setQuizzes(prev => [...prev, newQuiz]);
     return newQuiz.id;
-  }, [calculateTotalPoints]);
+  }, [calculateTotalPoints, quizExists]);
 
   // Fonction pour récupérer les quiz d'un cours
   const getQuizzesByCourse = useCallback((courseId) => {
@@ -73,9 +90,22 @@ export const QuizProvider = ({ children }) => {
     return quiz && quiz.isActive && userAttempts.length < 3;
   }, [getQuizById, quizAttempts]);
 
+  // ✅ FONCTION ADDQUIZ CORRIGÉE - Vérifie les doublons
   const addQuiz = useCallback((quizData) => {
+    // Vérifier si un quiz similaire existe déjà
+    const existingQuiz = quizzes.find(quiz => 
+      quiz.title === quizData.title && 
+      quiz.courseId === quizData.courseId
+    );
+
+    if (existingQuiz) {
+      console.warn('Un quiz avec le même titre existe déjà pour ce cours');
+      // Option: Mettre à jour l'existant au lieu de créer un doublon
+      return existingQuiz.id;
+    }
+
     const newQuiz = {
-      id: `quiz_${Date.now()}`,
+      id: `quiz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // ID plus unique
       ...quizData,
       createdAt: new Date().toISOString(),
       totalPoints: calculateTotalPoints(quizData.questions),
@@ -86,7 +116,7 @@ export const QuizProvider = ({ children }) => {
     
     setQuizzes(prev => [...prev, newQuiz]);
     return newQuiz.id;
-  }, [calculateTotalPoints]);
+  }, [quizzes, calculateTotalPoints]);
 
   const updateQuiz = useCallback((quizId, quizData) => {
     setQuizzes(prev => prev.map(quiz => 
@@ -111,28 +141,6 @@ export const QuizProvider = ({ children }) => {
       quiz.id === quizId ? { ...quiz, isActive: !quiz.isActive } : quiz
     ));
   }, []);
-
-  const duplicateQuiz = useCallback((quizId) => {
-    const quiz = getQuizById(quizId);
-    if (!quiz) return null;
-
-    const duplicatedQuiz = {
-      ...quiz,
-      id: `quiz_${Date.now()}`,
-      title: `${quiz.title} (Copie)`,
-      createdAt: new Date().toISOString(),
-      attempts: 0,
-      averageScore: 0,
-      isActive: false,
-      questions: quiz.questions.map(q => ({
-        ...q,
-        id: `question_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      }))
-    };
-
-    setQuizzes(prev => [...prev, duplicatedQuiz]);
-    return duplicatedQuiz.id;
-  }, [getQuizById]);
 
   const getQuizStats = useCallback((quizId) => {
     const quiz = getQuizById(quizId);
@@ -257,18 +265,23 @@ export const QuizProvider = ({ children }) => {
     return updatedAttempt;
   }, [quizAttempts, getQuizById, updateQuiz]);
 
-  // Fonction pour initialiser des quiz de démonstration pour les cours
+  // ✅ FONCTION INITIALIZEDEMOQUIZZES CORRIGÉE - Ne s'exécute qu'une fois
   const initializeDemoQuizzes = useCallback(() => {
+    if (isInitialized) {
+      console.log('Quiz de démonstration déjà initialisés');
+      return;
+    }
+
     const demoQuizzes = [
       {
-        courseId: 1, // ID du cours React
+        courseId: 1,
         title: "Quiz - Bases de React",
         description: "Testez vos connaissances sur les concepts fondamentaux de React",
         duration: 20,
         passingScore: 70,
         questions: [
           {
-            id: "q1",
+            id: "q1_" + Date.now(),
             questionText: "Qu'est-ce qu'un composant React?",
             questionType: "multiple_choice",
             options: [
@@ -281,7 +294,7 @@ export const QuizProvider = ({ children }) => {
             points: 1
           },
           {
-            id: "q2",
+            id: "q2_" + Date.now(),
             questionText: "Quel hook est utilisé pour gérer l'état local?",
             questionType: "multiple_choice",
             options: [
@@ -292,26 +305,18 @@ export const QuizProvider = ({ children }) => {
             ],
             correctAnswer: "useState",
             points: 1
-          },
-          {
-            id: "q3",
-            questionText: "React utilise le Virtual DOM pour optimiser les performances",
-            questionType: "true_false",
-            options: ["Vrai", "Faux"],
-            correctAnswer: "Vrai",
-            points: 1
           }
         ]
       },
       {
-        courseId: 1, // ID du cours React
+        courseId: 1,
         title: "Quiz - Hooks Avancés",
         description: "Évaluez votre maîtrise des Hooks React avancés",
         duration: 30,
         passingScore: 80,
         questions: [
           {
-            id: "q1",
+            id: "q3_" + Date.now(),
             questionText: "Quel hook permet de partager des données sans passer par les props?",
             questionType: "multiple_choice",
             options: [
@@ -322,39 +327,64 @@ export const QuizProvider = ({ children }) => {
             ],
             correctAnswer: "useContext",
             points: 2
-          },
-          {
-            id: "q2",
-            questionText: "useMemo est utilisé pour:",
-            questionType: "multiple_choice",
-            options: [
-              "Mémoriser une valeur calculée",
-              "Créer des effets de bord",
-              "Gérer l'état local",
-              "Optimiser les rendus"
-            ],
-            correctAnswer: "Mémoriser une valeur calculée",
-            points: 2
           }
         ]
       }
     ];
 
-    // Ajouter les quiz de démonstration seulement s'ils n'existent pas déjà
+    // Ajouter seulement les quiz qui n'existent pas
+    let addedCount = 0;
     demoQuizzes.forEach(demoQuiz => {
-      const existingQuiz = quizzes.find(q => q.courseId === demoQuiz.courseId && q.title === demoQuiz.title);
-      if (!existingQuiz) {
+      if (!quizExists(demoQuiz.courseId, demoQuiz.title)) {
         addQuizToCourse(demoQuiz.courseId, demoQuiz);
+        addedCount++;
       }
     });
-  }, [quizzes, addQuizToCourse]);
 
-  // Initialiser les quiz de démonstration au chargement
+    if (addedCount > 0) {
+      setIsInitialized(true);
+      console.log(`${addedCount} quiz de démonstration ajoutés`);
+    }
+  }, [isInitialized, quizExists, addQuizToCourse]);
+
+  // ✅ Initialiser UNE SEULE FOIS au chargement
   useEffect(() => {
-    if (quizzes.length === 0) {
+    if (quizzes.length === 0 && !isInitialized) {
       initializeDemoQuizzes();
     }
-  }, [quizzes.length, initializeDemoQuizzes]);
+  }, [quizzes.length, isInitialized, initializeDemoQuizzes]);
+
+  // ✅ FONCTION POUR NETTOYER LES DOUBLONS EXISTANTS
+  const removeDuplicateQuizzes = useCallback(() => {
+    const uniqueQuizzes = [];
+    const seen = new Set();
+
+    quizzes.forEach(quiz => {
+      const key = `${quiz.courseId}_${quiz.title}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueQuizzes.push(quiz);
+      }
+    });
+
+    if (uniqueQuizzes.length < quizzes.length) {
+      const removedCount = quizzes.length - uniqueQuizzes.length;
+      setQuizzes(uniqueQuizzes);
+      console.log(`${removedCount} doublons supprimés`);
+      return removedCount;
+    }
+    return 0;
+  }, [quizzes]);
+
+  // Nettoyer les doublons existants au chargement
+  useEffect(() => {
+    if (quizzes.length > 0) {
+      const removed = removeDuplicateQuizzes();
+      if (removed > 0) {
+        console.log(`Nettoyage effectué: ${removed} quiz en double supprimés`);
+      }
+    }
+  }, [quizzes.length, removeDuplicateQuizzes]);
 
   const value = {
     // Quiz CRUD
@@ -364,7 +394,6 @@ export const QuizProvider = ({ children }) => {
     updateQuiz,
     deleteQuiz,
     toggleQuizStatus,
-    duplicateQuiz,
     getAllQuizzes,
     getQuizStats,
     
@@ -378,7 +407,9 @@ export const QuizProvider = ({ children }) => {
     addQuizToCourse,
     getQuizzesByCourse,
     canUserTakeQuiz,
-    initializeDemoQuizzes
+    initializeDemoQuizzes,
+    removeDuplicateQuizzes, // ✅ Exposer la fonction de nettoyage
+    isInitialized
   };
 
   return (

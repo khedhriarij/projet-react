@@ -1,13 +1,12 @@
 // src/pages/dashboard/AdminDashboard.js
 import React from 'react';
-//import { Link } from 'react-router-dom';
 import { useAdminDashboard } from './hooks/useAdminDashboard';
 import CourseModal from './components/CourseModal';
 import CoursesTab from './components/CoursesTab';
 import OverviewTab from './components/OverviewTab';
 import UsersTab from './components/UsersTab';
 import PaymentsTab from './components/PaymentsTab';
-import QuizTab from './components/QuizTab'; // Nouveau composant pour les quiz
+import QuizTab from './components/QuizTab';
 import './admindashboard.css';
 
 const AdminDashboard = () => {
@@ -15,16 +14,20 @@ const AdminDashboard = () => {
     user,
     isAdmin,
     courses,
+    quizzes, // Ajout des quizzes
     activeTab,
     setActiveTab,
     showNewCourseForm,
     newCourse,
     defaultImages,
+    lastUpdated, // Ajout de lastUpdated
     handleInputChange,
     handleImageUrlChange,
     handleSelectDefaultImage,
     handleSubmitCourse,
     handleDeleteCourse,
+    handleUpdateCourse, // Ajout de la fonction de mise à jour
+    handleUpdateQuiz, // Ajout de la fonction de mise à jour des quiz
     handleNewCourseClick,
     handleCloseModal
   } = useAdminDashboard();
@@ -43,23 +46,41 @@ const AdminDashboard = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab courses={courses} />;
+        return (
+          <OverviewTab 
+            courses={courses} 
+            quizzes={quizzes}
+            lastUpdated={lastUpdated}
+          />
+        );
       case 'courses':
         return (
           <CoursesTab 
             courses={courses}
             onNewCourse={handleNewCourseClick}
             onDeleteCourse={handleDeleteCourse}
+            onUpdateCourse={handleUpdateCourse} // Passage de la fonction de mise à jour
           />
         );
-      case 'quizzes': // Nouvel onglet pour les quiz
-        return <QuizTab />;
+      case 'quizzes':
+        return (
+          <QuizTab 
+            quizzes={quizzes}
+            onUpdateQuiz={handleUpdateQuiz} // Passage de la fonction de mise à jour
+          />
+        );
       case 'users':
         return <UsersTab />;
       case 'payments':
         return <PaymentsTab />;
       default:
-        return <OverviewTab courses={courses} />;
+        return (
+          <OverviewTab 
+            courses={courses} 
+            quizzes={quizzes}
+            lastUpdated={lastUpdated}
+          />
+        );
     }
   };
 
@@ -71,6 +92,12 @@ const AdminDashboard = () => {
           <div className="sidebar-header">
             <h2>EduPlatform Admin</h2>
             <p>Tableau de Bord</p>
+            {/* Affichage de la dernière mise à jour dans la sidebar */}
+            {lastUpdated && (
+              <div className="last-updated-sidebar">
+                <small>Dernière mise à jour: {new Date(lastUpdated).toLocaleTimeString('fr-FR')}</small>
+              </div>
+            )}
           </div>
           
           <div className="sidebar-nav">
@@ -129,6 +156,14 @@ const AdminDashboard = () => {
               </h1>
               <p>Bienvenue, {user && user.displayName ? user.displayName : 'Administrateur'} 👋</p>
             </div>
+            
+            {/* Indicateur de dernière mise à jour dans le header */}
+            {lastUpdated && (
+              <div className="last-updated-header">
+                <span className="update-indicator">🔄</span>
+                <span>Mis à jour: {new Date(lastUpdated).toLocaleString('fr-FR')}</span>
+              </div>
+            )}
           </header>
 
           <div className="admin-content">

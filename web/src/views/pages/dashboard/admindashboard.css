@@ -1735,3 +1735,66 @@ button:focus-visible,
     justify-content: center;
   }
 }
+/* Ajoutez ces styles à votre fichier CSS */
+.dashboard-header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.last-updated {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.last-update-info {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.update-time {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.recent-activities {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.activity-icon {
+  margin-right: 10px;
+  font-size: 1.2rem;
+}
+
+.activity-info {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: 500;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.activity-time {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
+}

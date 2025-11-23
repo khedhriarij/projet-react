@@ -1,6 +1,6 @@
-// components/Quiz/QuizList.js
+// src/views/components/Quiz/QuizList.jsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // ✅ Supprimer useNavigate car non utilisé
 import { useQuizContext } from '../../../viewmodels/context/QuizContext';
 import './styles/QuizList.css';
 
@@ -9,11 +9,12 @@ export default function QuizList() {
     quizzes, 
     deleteQuiz, 
     toggleQuizStatus, 
-    duplicateQuiz, 
+    updateQuiz, 
     getQuizStats,
     getAllQuizzes 
   } = useQuizContext();
   
+  // ❌ SUPPRIMER: const navigate = useNavigate(); // Non utilisé
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
@@ -38,11 +39,11 @@ export default function QuizList() {
     toggleQuizStatus(quizId);
   };
 
-  const handleDuplicateQuiz = (quizId) => {
-    const newQuizId = duplicateQuiz(quizId);
-    if (newQuizId) {
-      alert('Quiz dupliqué avec succès !');
-    }
+  const handleQuickUpdate = (quizId, updates) => {
+    updateQuiz(quizId, {
+      ...updates,
+      updatedAt: new Date().toISOString()
+    });
   };
 
   const getAttemptStats = (quizId) => {
@@ -217,11 +218,13 @@ export default function QuizList() {
                         </Link>
                         
                         <button 
-                          onClick={() => handleDuplicateQuiz(quiz.id)}
-                          className="btn-icon duplicate"
-                          title="Dupliquer"
+                          onClick={() => handleQuickUpdate(quiz.id, { 
+                            title: `${quiz.title} (Mis à jour)`
+                          })}
+                          className="btn-icon update"
+                          title="Renommer rapidement"
                         >
-                          📋
+                          🔄
                         </button>
                         
                         <button 

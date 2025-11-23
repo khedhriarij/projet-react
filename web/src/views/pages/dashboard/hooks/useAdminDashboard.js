@@ -1,5 +1,5 @@
 // src/pages/dashboard/hooks/useAdminDashboard.js
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthContext } from '../../../../viewmodels/hooks/useAuthContext';
 import { useAdmin } from '../../../../viewmodels/hooks/UseAdmin';
 import { useCourseContext } from '../../../../viewmodels/context/CourContext';
@@ -7,10 +7,11 @@ import { useCourseContext } from '../../../../viewmodels/context/CourContext';
 export const useAdminDashboard = () => {
   const { user } = useAuthContext();
   const { isAdmin } = useAdmin();
-  const { courses, addCourse, deleteCourse } = useCourseContext();
+  const { courses, addCourse, deleteCourse, updateCourse } = useCourseContext(); // Ajout de updateCourse
   
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewCourseForm, setShowNewCourseForm] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null); // État pour lastUpdated
   const [newCourse, setNewCourse] = useState({
     title: '',
     category: '',
@@ -25,6 +26,11 @@ export const useAdminDashboard = () => {
     hasPromotion: false,
     status: 'draft'
   });
+
+  // Mettre à jour lastUpdated quand les cours changent
+  useEffect(() => {
+    setLastUpdated(new Date().toISOString());
+  }, [courses]);
 
   const defaultImages = [
     { url: '/images/react.jpg', label: 'React' },
@@ -136,7 +142,9 @@ export const useAdminDashboard = () => {
       duration: newCourse.duration,
       image: newCourse.image,
       discountPercentage: newCourse.discountPercentage,
-      status: newCourse.status
+      status: newCourse.status,
+      createdAt: new Date().toISOString(), // ✅ Ajout de createdAt
+      updatedAt: new Date().toISOString()  // ✅ Ajout de updatedAt
     };
 
     try {
@@ -165,6 +173,44 @@ export const useAdminDashboard = () => {
       alert('❌ Erreur lors de la création du cours');
     }
   };
+
+  // Fonction pour mettre à jour un cours avec updatedAt
+  const handleUpdateCourse = useCallback((courseId, courseData) => {
+    try {
+      const updatedData = {
+        ...courseData,
+        updatedAt: new Date().toISOString() // ✅ Mise à jour automatique
+      };
+      
+      if (updateCourse) {
+        updateCourse(courseId, updatedData);
+      } else {
+        console.warn('updateCourse function not available in context');
+        // Fallback: vous pouvez gérer la mise à jour localement si nécessaire
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du cours:', error);
+      alert('❌ Erreur lors de la mise à jour du cours');
+    }
+  }, [updateCourse]);
+
+  // Fonction pour mettre à jour un quiz (si vous avez des quizzes)
+  const handleUpdateQuiz = useCallback((quizId, quizData) => {
+    try {
+      const updatedData = {
+        ...quizData,
+        updatedAt: new Date().toISOString() // ✅ Mise à jour automatique
+      };
+      
+      // Ici vous appelleriez votre fonction de mise à jour des quizzes
+      // updateQuiz(quizId, updatedData);
+      console.log('Quiz updated:', quizId, updatedData);
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du quiz:', error);
+      alert('❌ Erreur lors de la mise à jour du quiz');
+    }
+  }, []);
 
   const handleDeleteCourse = (courseId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) {
@@ -204,11 +250,14 @@ export const useAdminDashboard = () => {
     showNewCourseForm,
     newCourse,
     defaultImages,
+    lastUpdated, // ✅ Exposer lastUpdated
     handleInputChange,
     handleImageUrlChange,
     handleSelectDefaultImage,
     handleSubmitCourse,
     handleDeleteCourse,
+    handleUpdateCourse, 
+    handleUpdateQuiz, 
     handleNewCourseClick,
     handleCloseModal
   };
