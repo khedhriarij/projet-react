@@ -1,0 +1,60 @@
+/* src/pages/payment/payment.css */
+.payment-result-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.payment-result-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.success-icon,
+.error-icon,
+.cancel-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.payment-result-content h2 {
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 1.8em;
+}
+
+.payment-result-content p {
+  color: #718096;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.loading-spinner.large {
+  width: 80px;
+  height: 80px;
+  border: 6px solid #e9ecef;
+  border-top: 6px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -1,148 +1,72 @@
-// hooks/useSignup.js - VERSION CORRIGÉE AVEC REDIRECTION
-import { useState, useEffect } from 'react'
-import { projectAuth, projectStorage, projectFirestore } from '../../models/services/firebase/config'
-
-import { useAuthContext } from './useAuthContext'
-import { useNavigate } from 'react-router-dom'
+// src/viewmodels/hooks/useSignup.js - VERSION CORRIGÉE
+import { useState } from 'react';
+import { projectAuth, projectStorage, projectFirestore } from '../../models/services/firebase/config';
+import { useAuthContext } from './useAuthContext';
 
 export const useSignup = () => {
-  const [isCancelled, setIsCancelled] = useState(false)
-  const [error, setError] = useState(null)
-  const [isPending, setIsPending] = useState(false)
-  const { dispatch } = useAuthContext()
-  const navigate = useNavigate()
+  const [error, setError] = useState(null);
+  const [isPending, setIsPending] = useState(false);
+  const { dispatch } = useAuthContext();
 
   const signup = async (email, password, displayName, thumbnail) => {
-    setError(null)
-    setIsPending(true)
-  
+    setError(null);
+    setIsPending(true);
+
     try {
-      console.log('🚀 DÉBUT INSCRIPTION - Sauvegarde Firestore FORCÉE')
+      // Créer l'utilisateur Firebase Auth
+      const res = await projectAuth.createUserWithEmailAndPassword(email, password);
       
-      // ÉTAPE 1 : Création du compte Auth
-      const res = await projectAuth.createUserWithEmailAndPassword(email, password)
-      console.log('✅ Compte Auth créé:', res.user.uid)
+      if (!res.user) {
+        throw new Error('Impossible de créer le compte');
+      }
 
-      // ÉTAPE 2 : Upload photo (optionnel)
-      let imgUrl = null
+      // Upload de l'image de profil
+      let photoURL = null;
       if (thumbnail) {
-        try {
-          console.log('📸 Début upload photo...')
-          const uploadPath = `thumbnails/${res.user.uid}/${thumbnail.name}`
-          const img = await projectStorage.ref(uploadPath).put(thumbnail)
-          imgUrl = await img.ref.getDownloadURL()
-          console.log('✅ Photo uploadée:', imgUrl)
-        } catch (uploadError) {
-          console.warn('⚠️ Upload photo échoué, continuation sans photo:', uploadError)
-          imgUrl = null
-        }
+        const uploadPath = `thumbnails/${res.user.uid}/${thumbnail.name}`;
+        const img = await projectStorage.ref(uploadPath).put(thumbnail);
+        photoURL = await img.ref.getDownloadURL();
       }
 
-      // ÉTAPE 3 : Mise à jour profil Auth
-      console.log('👤 Mise à jour profil Auth...')
-      await res.user.updateProfile({ 
-        displayName, 
-        photoURL: imgUrl 
-      })
+      // Mettre à jour le profil utilisateur
+      await res.user.updateProfile({
+        displayName,
+        photoURL
+      });
 
-      // ÉTAPE 4 : SAUVEGARDE FIRESTORE - CRITIQUE
-      console.log('💾 DÉBUT SAUVEGARDE FIRESTORE...')
-      
-      const userData = {
-        uid: res.user.uid,
-        displayName: displayName,
-        email: email,
-        photoURL: imgUrl,
-        role: 'student', 
+      // Créer le document utilisateur dans Firestore
+      await projectFirestore.collection('users').doc(res.user.uid).set({
         online: true,
+        displayName,
+        photoURL,
+        email,
+        role: 'student', // Rôle par défaut
+        createdAt: new Date()
+      });
+
+      // Créer le profil utilisateur
+      await projectFirestore.collection('userProfiles').doc(res.user.uid).set({
+        displayName,
+        email,
+        role: 'student',
+        photoURL,
         createdAt: new Date(),
-        lastLogin: new Date()
-      }
+        updatedAt: new Date()
+      });
 
-      console.log('📝 Données à sauvegarder:', userData)
+      // Dispatch login
+      dispatch({ type: 'LOGIN', payload: res.user });
 
-      // SAUVEGARDE FORCÉE avec try/catch séparé
-      try {
-        // Méthode 1: set() avec merge false (écrase complètement)
-        await projectFirestore.collection('users').doc(res.user.uid).set(userData)
-        console.log('✅ PREMIÈRE SAUVEGARDE FIRESTORE RÉUSSIE')
-        
-        // Vérification immédiate
-        const docRef = projectFirestore.collection('users').doc(res.user.uid)
-        const docSnapshot = await docRef.get()
-        
-        if (docSnapshot.exists) {
-          console.log('🔍 VÉRIFICATION: Document EXISTE dans Firestore')
-          console.log('📊 Données vérifiées:', docSnapshot.data())
-        } else {
-          console.error('❌ VÉRIFICATION: Document NEXISTE PAS après sauvegarde!')
-          throw new Error('Échec sauvegarde Firestore - document non créé')
-        }
-        
-      } catch (firestoreError) {
-        console.error('❌ ERREUR FIRESTORE PRIMAIRE:', firestoreError)
-        
-        // Tentative de secours
-        try {
-          console.log('🔄 TENTATIVE DE SECOURS...')
-          await projectFirestore.collection('users').add(userData)
-          console.log('✅ SAUVEGARDE DE SECOURS RÉUSSIE (méthode add)')
-        } catch (backupError) {
-          console.error('❌ ERREUR SAUVEGARDE SECOURS:', backupError)
-          throw new Error(`Double échec Firestore: ${firestoreError.message} + ${backupError.message}`)
-        }
-      }
+      setIsPending(false);
+      return true;
 
-      // ÉTAPE 5 : Rechargement et dispatch
-      await res.user.reload()
-      const updatedUser = projectAuth.currentUser
-      
-      dispatch({ type: 'LOGIN', payload: updatedUser })
-      console.log('🎉 INSCRIPTION TERMINÉE AVEC SUCCÈS - Firestore OK')
-
-      // ÉTAPE 6 : REDIRECTION VERS CATALOG
-      console.log('📍 Redirection vers /catalog')
-      navigate('/catalog')
-
-      if (!isCancelled) {
-        setIsPending(false)
-        setError(null)
-      }
-
-    } 
-    catch(err) {
-      console.error('❌ ERREUR INSCRIPTION COMPLÈTE:', err)
-      
-      if (!isCancelled) {
-        // Gestion améliorée des erreurs
-        let errorMessage = 'Une erreur est survenue lors de l\'inscription'
-        
-        switch (err.code) {
-          case 'auth/email-already-in-use':
-            errorMessage = 'Cet email est déjà utilisé'
-            break
-          case 'auth/invalid-email':
-            errorMessage = 'Format d\'email invalide'
-            break
-          case 'auth/weak-password':
-            errorMessage = 'Le mot de passe est trop faible (minimum 6 caractères)'
-            break
-          case 'auth/operation-not-allowed':
-            errorMessage = 'L\'inscription par email/mot de passe n\'est pas activée'
-            break
-          default:
-            errorMessage = err.message || 'Erreur lors de l\'inscription'
-        }
-        
-        setError(errorMessage)
-        setIsPending(false)
-      }
+    } catch (err) {
+      console.error('Erreur signup:', err);
+      setError(err.message);
+      setIsPending(false);
+      return false;
     }
-  }
+  };
 
-  useEffect(() => {
-    return () => setIsCancelled(true)
-  }, [])
-
-  return { signup, error, isPending }
-}
+  return { signup, isPending, error };
+};

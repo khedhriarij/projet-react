@@ -1,28 +1,58 @@
-
-import { useState, useMemo } from 'react';
+// pages/catalog/Catalog.js - VERSION OPTIMISÉE
+import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '../../../viewmodels/hooks/useAuthContext';
 import { useAdmin } from '../../../viewmodels/hooks/UseAdmin';
 import { useCourseContext } from '../../../viewmodels/context/CourContext';
+import { useCoursePurchase } from '../../../viewmodels/hooks/useCoursePurchase';
 import CourseCard from '../../components/CourseCard/CourseCard';
 import CourseFilters from '../../components/CourseFilters/CourseFilters';
 import SearchBar from '../../components/SearchBar/SearchBar';
 import './catalog.css';
 
-
 export default function Catalog() {
   const { user } = useAuthContext();
   const { isAdmin } = useAdmin();
   const { courses } = useCourseContext(); 
+  const { getPurchasedCourses } = useCoursePurchase();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   const [sortBy, setSortBy] = useState('popular');
+  const [purchasedCourseIds, setPurchasedCourseIds] = useState(new Set());
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
 
-  // SUPPRIMEZ les données mockées statiques :
-  // const mockCourses = [...] ← À SUPPRIMER
+  // Chargement des cours achetés
+  useEffect(() => {
+    const loadPurchasedCourses = async () => {
+      if (!user) {
+        setPurchasedCourseIds(new Set());
+        return;
+      }
 
+      try {
+        setLoadingPurchases(true);
+        const purchasedCourses = await getPurchasedCourses();
+        const purchasedIds = new Set(purchasedCourses.map(purchase => purchase.courseId));
+        setPurchasedCourseIds(purchasedIds);
+      } catch (error) {
+        console.error('Erreur chargement des achats:', error);
+        setPurchasedCourseIds(new Set());
+      } finally {
+        setLoadingPurchases(false);
+      }
+    };
+
+    loadPurchasedCourses();
+  }, [user, getPurchasedCourses]);
+
+  // Vérification si un cours est acheté
+  const isCoursePurchased = (courseId) => {
+    return purchasedCourseIds.has(courseId);
+  };
+
+  // Filtrage et tri des cours
   const filteredCourses = useMemo(() => {
-    let filtered = courses; // ← Utilisez les cours du contexte
+    let filtered = courses;
 
     // Filtre par recherche
     if (searchTerm) {
@@ -61,7 +91,7 @@ export default function Catalog() {
     }
 
     return filtered;
-  }, [courses, searchTerm, selectedCategory, sortBy]); // ← Ajoutez courses aux dépendances
+  }, [courses, searchTerm, selectedCategory, sortBy]);
 
   const categories = ['Tous', 'Développement', 'Design', 'Business'];
 
@@ -69,7 +99,7 @@ export default function Catalog() {
     <div className="catalog-page">
       <div className="catalog-header">
         <h1>Explorez Notre Catalogue de Cours</h1>
-        <p>Découvrez {courses.length} cours professionnels pour booster votre carrière</p> {/* ← Utilise courses.length */}
+        <p>Découvrez {courses.length} cours professionnels pour booster votre carrière</p>
       </div>
 
       <div className="catalog-controls">
@@ -93,6 +123,7 @@ export default function Catalog() {
             {filteredCourses.length} cours trouvés
             {selectedCategory !== 'Tous' && ` dans "${selectedCategory}"`}
             {searchTerm && ` pour "${searchTerm}"`}
+            {loadingPurchases && ' • Chargement des achats...'}
           </span>
         </div>
 
@@ -108,7 +139,7 @@ export default function Catalog() {
                 key={course.id}
                 course={course}
                 isAdmin={isAdmin}
-                user={user}
+                isPurchased={isCoursePurchased(course.id)}
               />
             ))}
           </div>

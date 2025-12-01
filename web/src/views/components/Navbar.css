@@ -1,214 +1,178 @@
-/* Navbar.css - STYLE PROFESSIONNEL PLATEFORME ÉDUCATION */
+/* NAVBAR - STYLE PASTEL PREMIUM (Plateforme Éducative) */
 .navbar {
     width: 100%;
-    padding: 20px 0;
-    box-sizing: border-box;
-    margin-bottom: 60px;
-    position: relative;
-    background: linear-gradient(135deg, #d83333 0%, #0e5aa7 100%);
-    border-bottom: 1px solid #e9ecef;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(10px);
+    padding: 18px 0;
+    backdrop-filter: blur(18px);
+    background: linear-gradient(135deg, rgba(200,162,200,0.55), rgba(161,220,228,0.55));
+    border-bottom: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 10px 35px rgba(140, 115, 180, 0.12);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    animation: fadeSlideDown 0.6s ease-out;
 }
 
+/* Container UL */
 .navbar ul {
-    display: flex;
-    margin: 0 auto;
     max-width: 1200px;
-    padding: 0 40px;
+    margin: 0 auto;
+    padding: 0 45px;
+    display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     list-style: none;
 }
 
+/* LOGO - MODIFICATIONS APPLIQUÉES */
 .navbar .logo {
-    font-weight: 700;
-    color: #2c3e50;
-    letter-spacing: 0.5px;
     display: flex;
     align-items: center;
-    margin-right: auto;
+    gap: 15px;
+    font-weight: 800; /* Plus bold (était 700) */
+    font-size: 1.5rem;
+    color: #4A2C7A; /* Violet plus foncé (était #6A4CAD) */
+    letter-spacing: 1px;
     text-decoration: none;
-    font-size: 1.4rem;
-    transition: all 0.3s ease;
+    transition: all 0.35s ease;
+    text-shadow: 0 2px 4px rgba(74, 44, 122, 0.2); /* Ombre pour plus de profondeur */
 }
 
-/* STYLE AMÉLIORÉ POUR LE LOGO */
+/* Logo image */
 .navbar .logo img {
-    margin-right: 15px;
-    width: 80px; /* Taille significativement augmentée */
-    height: 80px; /* Taille significativement augmentée */
+    width: 75px;
+    height: 75px;
     object-fit: contain;
-    transition: all 0.3s ease;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    /* Suppression complète du fond */
-    background: none !important;
-    border-radius: 12px;
+    filter: drop-shadow(0 4px 10px rgba(74, 44, 122, 0.4)); /* Ombre adaptée à la nouvelle couleur */
+    transition: 0.35s ease;
 }
 
-/* Effet de survol sophistiqué */
+/* Hover logo - MODIFIÉ POUR LA NOUVELLE COULEUR */
 .navbar .logo:hover {
-    transform: translateY(-1px);
+    color: #5A3C8A; /* Légèrement plus clair au hover */
 }
 
 .navbar .logo:hover img {
-    transform: scale(1.05);
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+    transform: scale(1.07) rotate(2deg);
+    filter: drop-shadow(0 6px 12px rgba(90, 60, 138, 0.5));
 }
 
+/* NAV LINKS */
 .navbar li:not(.logo) {
-    margin-left: 25px;
+    margin-left: 30px;
 }
 
-/* Style des liens de navigation */
 .navbar a {
-    color: #031a30;
     text-decoration: none;
-    margin-right: 0;
-    padding: 8px 16px;
-    border-radius: 6px;
-    transition: all 0.3s ease;
+    padding: 10px 18px;
+    border-radius: 10px;
     font-weight: 500;
+    color: #4A3C7A;
     position: relative;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
 }
 
+/* Hover links – effet glow pastel */
 .navbar a:hover {
-    color: #3498db;
-    background-color: rgba(52, 152, 219, 0.1);
-    transform: translateY(-1px);
+    background: rgba(246, 225, 255, 0.6);
+    color: #7d4cdb;
+    box-shadow: 0 4px 15px rgba(160, 120, 225, 0.3);
+    transform: translateY(-2px);
 }
 
+/* Effet underline animé */
 .navbar a::after {
-    content: '';
+    content: "";
     position: absolute;
-    bottom: -2px;
+    bottom: -3px;
     left: 50%;
     width: 0;
     height: 2px;
-    background: #3498db;
-    transition: all 0.3s ease;
+    background: #4A2C7A; /* Adapté à la nouvelle couleur */
+    transition: 0.3s ease;
     transform: translateX(-50%);
+    border-radius: 3px;
 }
-
 .navbar a:hover::after {
     width: 80%;
 }
 
-.navbar .logo a {
-    text-decoration: none;
-    color: inherit;
-    padding: 0;
-    background: none;
-}
-
-.navbar .logo a:hover {
-    background: none;
-    transform: none;
-}
-
-.navbar .logo a::after {
-    display: none;
-}
-
-/* Style des boutons */
+/* BOUTON (Login / Inscription / Menu) */
 .navbar .btn {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
+    padding: 10px 22px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4A2C7A, #8B6BBE); /* Adapté aux nouvelles couleurs */
     border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    color: #fff;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    cursor: pointer;
+    letter-spacing: 0.6px;
+    box-shadow: 0 6px 18px rgba(74, 44, 122, 0.3);
+    transition: 0.3s ease;
 }
 
 .navbar .btn:hover {
-    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #5A3C8A, #9B7BCE);
+    box-shadow: 0 10px 25px rgba(90, 60, 138, 0.4);
 }
 
-.navbar .btn:disabled {
-    background: #95a5a6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* Style du bouton menu */
+/* MENU BUTTON RESPONSIVE */
 .menu-button {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-right: 20px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    background: linear-gradient(135deg, #4A2C7A, #8B6BBE); /* Adapté aux nouvelles couleurs */
+    padding: 10px 20px;
+    color: white;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 15px rgba(74, 44, 122, 0.35);
+    transition: 0.3s ease;
 }
 
 .menu-button:hover {
-    background: linear-gradient(135deg, #2980b9 0%, #2471a3 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(90, 60, 138, 0.4);
 }
 
 .menu-button::before {
-    content: '☰';
+    content: "☰";
     font-size: 18px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .navbar {
-        padding: 15px 0;
-        margin-bottom: 40px;
-    }
-    
     .navbar ul {
-        padding: 0 15px;
-        flex-wrap: wrap;
+        padding: 0 20px;
     }
-    
+
     .navbar .logo img {
-        width: 60px;
-        height: 60px;
+        width: 55px;
+        height: 55px;
     }
-    
-    .navbar .logo span {
-        font-size: 1.2rem;
-    }
-    
+
     .menu-button {
-        margin-right: 15px;
         padding: 8px 16px;
+        gap: 6px;
     }
-    
+
     .navbar li:not(.logo) {
-        margin-left: 15px;
+        margin-left: 18px;
     }
 }
 
-/* Animation d'entrée */
-@keyframes slideInDown {
+/* Animation smooth */
+@keyframes fadeSlideDown {
     from {
-        transform: translateY(-100%);
         opacity: 0;
+        transform: translateY(-30%);
     }
     to {
-        transform: translateY(0);
         opacity: 1;
+        transform: translateY(0);
     }
-}
-
-.navbar {
-    animation: slideInDown 0.5s ease-out;
 }

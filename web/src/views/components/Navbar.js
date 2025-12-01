@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../../viewmodels/hooks/useAuthContext';
 import { useLogout } from '../../viewmodels/hooks/useLogout';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/learnup_logo.jpeg';
 //styles & images
 import './Navbar.css'
 

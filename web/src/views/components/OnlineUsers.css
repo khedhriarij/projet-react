@@ -1,36 +1,92 @@
+/* src/views/components/OnlineUsers.css - CORRIGÉ */
 .user-list {
-    width: 250px;
-    min-width: 250px;
-    padding: 30px;
-    box-sizing: border-box;
-    background: #fbfbfb;
-    color: var(--heading-color);
+    width: 260px;
+    min-width: 260px;
+    padding: 30px 25px;
+    background: linear-gradient(180deg, #f2e9ff, #e8d8ff, #dcc7ff);
+    color: #3a2b5f;
+    border-left: 1px solid rgba(120, 80, 180, 0.2);
+    box-shadow: -4px 0 15px rgba(70, 40, 120, 0.1);
+    border-radius: 0 20px 20px 0;
+    font-family: 'Inter', sans-serif;
 }
+
 .user-list h2 {
     text-align: right;
-    margin-bottom: 40px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    font-size: 1.2em;
+    margin-bottom: 30px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(120, 80, 180, 0.25);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #4b2f7f;
 }
-.user-list .user-list-item{
+
+.user-list .user-list-item {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    margin: 20px auto;
+    margin: 20px 0;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 10px 12px;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(90, 60, 150, 0.08);
+    transition: all 0.3s ease;
+    position: relative;
 }
-.user-list .avatar{
-    margin-left:10px;
-    width: 40px;
-    height: 40px;
+
+.user-list .user-list-item:hover {
+    transform: translateX(-4px);
+    background: rgba(255, 255, 255, 0.85);
 }
-/* online users*/
-.user-list .online-user{
+
+.user-name {
+    margin-right: 10px;
+    font-weight: 600;
+    color: #3a2b5f;
+    text-align: right;
+}
+
+.you-label {
+    display: block;
+    font-size: 0.75em;
+    color: #7b5bc7;
+}
+
+.user-list .avatar {
+    margin-left: 10px;
+    width: 42px;
+    height: 42px;
+}
+
+/* Pastille de statut */
+.online-user {
     display: inline-block;
     margin-right: 10px;
     width: 12px;
     height: 12px;
-    background: #0ebb50;
     border-radius: 50%;
-    margin-top: 2px;
+    border: 2px solid #e8d8ff;
+    box-shadow: 0 0 6px rgba(50, 200, 100, 0.4);
+}
+
+/* En ligne - vert */
+.user-list-item .online-user {
+    background: #3dd178;
+}
+
+/* Hors ligne - rouge */
+.user-list-item.offline .online-user {
+    background: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.no-users {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.no-users p {
+    margin: 0;
+    font-style: italic;
 }

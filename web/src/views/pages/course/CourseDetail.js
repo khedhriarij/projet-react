@@ -1,12 +1,15 @@
-// pages/course/CourseDetail.js - VERSION CORRIGÉE (Dynamique)
+// pages/course/CourseDetail.js - VERSION OPTIMISÉE
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../../viewmodels/hooks/useAuthContext';
 import { useCoursePurchase } from '../../../viewmodels/hooks/useCoursePurchase';
 import { useCourseContext } from '../../../viewmodels/context/CourContext';
 import { useQuizContext } from '../../../viewmodels/context/QuizContext';
-import './coursedetail.css';
+import CoursePlayerIntegrated from './CoursePlayerIntegrated'; 
+import fileStorageService from '../../../models/services/FileStorageService';
 
+
+import './coursedetail.css';
 
 // Composant pour afficher les quiz du cours
 const CourseQuizzes = ({ courseId }) => {
@@ -14,8 +17,7 @@ const CourseQuizzes = ({ courseId }) => {
   const navigate = useNavigate();
   
   const quizzes = getQuizzesByCourse(courseId);
-
-  // Éviter les doublons
+  
   const uniqueQuizzes = quizzes.filter((quiz, index, self) => 
     index === self.findIndex(q => q.id === quiz.id)
   );
@@ -23,7 +25,7 @@ const CourseQuizzes = ({ courseId }) => {
   if (uniqueQuizzes.length === 0) {
     return (
       <div className="no-quizzes">
-        <div className="no-quizzes-icon">📝</div>
+        <div className="no-quizzes-icon"></div>
         <h3>Aucun quiz disponible</h3>
         <p>Les quiz pour ce cours seront bientôt disponibles.</p>
       </div>
@@ -62,16 +64,16 @@ const CourseQuizzes = ({ courseId }) => {
               
               <div className="quiz-meta">
                 <div className="meta-item">
-                  <span className="meta-icon">⏱️</span>
+                  <span>Durée:</span>
                   <span>{quiz.duration} min</span>
                 </div>
                 <div className="meta-item">
-                  <span className="meta-icon">❓</span>
-                  <span>{quiz.questions.length} questions</span>
+                  <span>Questions:</span>
+                  <span>{quiz.questions.length}</span>
                 </div>
                 <div className="meta-item">
-                  <span className="meta-icon">🎯</span>
-                  <span>{quiz.passingScore}% pour réussir</span>
+                  <span>Score requis:</span>
+                  <span>{quiz.passingScore}%</span>
                 </div>
               </div>
 
@@ -109,20 +111,62 @@ const CourseQuizzes = ({ courseId }) => {
   );
 };
 
-// Composant principal CourseDetail (VERSION DYNAMIQUE)
+// Composant principal CourseDetail
 export default function CourseDetail() {
   const { id } = useParams();
   const { user } = useAuthContext();
   const { purchaseCourse, hasPurchasedCourse, updateCourseProgress, isProcessing } = useCoursePurchase();
-  const { getCourseById } = useCourseContext(); // HOOK AJOUTÉ
-  
+  const { getCourseById } = useCourseContext();
+  const navigate = useNavigate();
+
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(0);
   const [completedLessons, setCompletedLessons] = useState([]);
-  const [activeTab, setActiveTab] = useState('lessons');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isPurchased, setIsPurchased] = useState(false);
+    const [courseFiles, setCourseFiles] = useState([]); 
+  const [filesLoading, setFilesLoading] = useState(false); 
+  useEffect(() => {
+    const loadCourseFiles = async () => {
+      if (course && course.id) {
+        setFilesLoading(true);
+        try {
+          console.log(`🔄 Chargement fichiers pour cours ${course.id}...`);
+          const files = await fileStorageService.getCourseFiles(course.id);
+          setCourseFiles(files);
+          console.log(`✅ ${files.length} fichiers chargés`);
+        } catch (error) {
+          console.error('❌ Erreur chargement fichiers:', error);
+          setCourseFiles([]);
+        } finally {
+          setFilesLoading(false);
+        }
+      }
+    };
 
-  // Récupération dynamique du cours
+    loadCourseFiles();
+  }, [course]);
+  // Vérification asynchrone de l'achat
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      if (course && user) {
+        try {
+          const purchased = await hasPurchasedCourse(course.id);
+          setIsPurchased(purchased);
+        } catch (error) {
+          console.error('Erreur vérification achat:', error);
+          setIsPurchased(false);
+        }
+      } else {
+        setIsPurchased(false);
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [course, user, hasPurchasedCourse]);
+
+  // Récupération du cours
   useEffect(() => {
     const courseId = parseInt(id);
     
@@ -130,12 +174,9 @@ export default function CourseDetail() {
       const foundCourse = getCourseById(courseId);
       
       if (foundCourse) {
-        console.log('✅ Cours trouvé dynamiquement:', foundCourse.title);
         setCourse(foundCourse);
         
-        // Initialiser les sections/leçons si elles existent
         if (foundCourse.sections && foundCourse.sections.length > 0) {
-          // Convertir les sections en leçons plates pour l'affichage
           const allLessons = foundCourse.sections.flatMap(section => 
             section.lessons.map(lesson => ({
               ...lesson,
@@ -144,32 +185,41 @@ export default function CourseDetail() {
           );
           setCourse(prev => ({ ...prev, lessons: allLessons }));
         }
-      } else {
-        console.log('❌ Cours non trouvé avec ID:', courseId);
       }
-      
       setLoading(false);
     }
   }, [id, getCourseById]);
 
-  const isPurchased = course ? hasPurchasedCourse(course.id) : false;
   const discount = course && course.originalPrice 
     ? Math.round(((course.originalPrice - course.price) / course.originalPrice) * 100) 
     : 0;
 
-  const handlePurchase = async () => {
-    if (!course) return;
-    
-    const success = await purchaseCourse(course.id, {
-      title: course.title,
-      instructor: course.instructor,
-      image: course.image,
-      price: course.price
-    });
+  const progress = course && course.lessons 
+    ? Math.round((completedLessons.length / course.lessons.length) * 100) 
+    : 0;
 
-    if (success) {
-      alert('🎉 Cours acheté avec succès !');
-      window.location.reload();
+  // Fonction d'achat optimisée
+  const handlePurchase = async () => {
+    if (!course || !user) {
+      alert('Veuillez vous connecter pour acheter un cours');
+      return;
+    }
+    
+    try {
+      const success = await purchaseCourse(course.id, {
+        title: course.title,
+        instructor: course.instructor,
+        image: course.image,
+        price: course.price,
+        originalPrice: course.originalPrice
+      });
+
+      if (!success) {
+        alert('Erreur lors du démarrage du paiement');
+      }
+    } catch (err) {
+      console.error('Erreur achat:', err);
+      alert('Erreur: ' + err.message);
     }
   };
 
@@ -180,17 +230,13 @@ export default function CourseDetail() {
     if (currentLesson && !completedLessons.includes(currentLesson.id)) {
       updateCourseProgress(course.id, currentLesson.id, true);
       setCompletedLessons(prev => [...prev, currentLesson.id]);
-      alert(`✅ Leçon "${currentLesson.title}" marquée comme terminée !`);
+      alert(`Leçon "${currentLesson.title}" marquée comme terminée !`);
     }
   };
 
   const canAccessLesson = (lesson) => {
     return !lesson.premium || isPurchased;
   };
-
-  const progress = course && course.lessons 
-    ? Math.round((completedLessons.length / course.lessons.length) * 100) 
-    : 0;
 
   if (loading) {
     return (
@@ -261,10 +307,9 @@ export default function CourseDetail() {
                 <span className="rating-count">({course.students || 0} avis)</span>
               </div>
 
-              {/* Affichage du nom de l'utilisateur connecté */}
               {user && (
                 <div className="user-welcome">
-                  <p>👋 Bonjour, <strong>{user.displayName || user.email}</strong> ! Prêt à apprendre ?</p>
+                  <p>Bonjour, <strong>{user.displayName || user.email}</strong> ! Prêt à apprendre ?</p>
                 </div>
               )}
 
@@ -292,11 +337,6 @@ export default function CourseDetail() {
                     e.target.src = '/images/default-course.jpg';
                   }}
                 />
-                <div className="preview-overlay">
-                  <button className="preview-btn">
-                    ▶️ Voir l'aperçu
-                  </button>
-                </div>
               </div>
 
               <div className="pricing">
@@ -311,7 +351,7 @@ export default function CourseDetail() {
 
               {isPurchased ? (
                 <div className="purchased-badge">
-                  ✅ Vous possédez ce cours
+                  Vous possédez ce cours
                 </div>
               ) : (
                 <button 
@@ -324,7 +364,7 @@ export default function CourseDetail() {
               )}
 
               <div className="guarantee">
-                ✅ Garantie satisfait ou remboursé 30 jours
+                Garantie satisfait ou remboursé 30 jours
               </div>
             </div>
           </div>
@@ -335,31 +375,76 @@ export default function CourseDetail() {
       <div className="course-tabs-container">
         <div className="course-tabs">
           <button 
+            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            Aperçu
+          </button>
+          <button 
             className={`tab-btn ${activeTab === 'lessons' ? 'active' : ''}`}
             onClick={() => setActiveTab('lessons')}
           >
-            📚 Leçons
+            Leçons
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'player' ? 'active' : ''}`}
+            onClick={() => setActiveTab('player')}
+          >
+            Lecture
           </button>
           <button 
             className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`}
             onClick={() => setActiveTab('resources')}
           >
-            📎 Ressources
+            Ressources
           </button>
           <button 
             className={`tab-btn ${activeTab === 'quizzes' ? 'active' : ''}`}
             onClick={() => setActiveTab('quizzes')}
           >
-            🎯 Quiz & Évaluations
+            Quiz
           </button>
         </div>
       </div>
 
       {/* Contenu des onglets */}
+      {activeTab === 'overview' && (
+        <div className="overview-tab">
+          <div className="course-info-sections">
+            <div className="info-grid">
+              <div className="info-card">
+                <h3>Objectifs du cours</h3>
+                <ul className="objectives-list">
+                  {course.objectives && course.objectives.length > 0 ? (
+                    course.objectives.map((objective, index) => (
+                      <li key={index}>{objective}</li>
+                    ))
+                  ) : (
+                    <li>Aucun objectif défini pour ce cours.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="info-card">
+                <h3>Ce qui est inclus</h3>
+                <ul className="requirements-list">
+                  {course.includes && course.includes.length > 0 ? (
+                    course.includes.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))
+                  ) : (
+                    <li>Accès complet au contenu du cours</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'lessons' && (
         <div className="course-content-section">
           <div className="content-grid">
-            {/* Lessons Sidebar */}
             <div className="lessons-sidebar">
               <div className="sidebar-header">
                 <h3>Contenu du cours</h3>
@@ -401,7 +486,6 @@ export default function CourseDetail() {
               </div>
             </div>
 
-            {/* Lesson Content */}
             <div className="lesson-content">
               {currentLesson ? (
                 <>
@@ -443,14 +527,14 @@ export default function CourseDetail() {
                         className={`complete-btn ${completedLessons.includes(currentLesson.id) ? 'completed' : ''}`}
                       >
                         {completedLessons.includes(currentLesson.id) 
-                          ? '✅ Leçon terminée' 
+                          ? '✓ Leçon terminée' 
                           : 'Marquer comme terminée'}
                       </button>
                     )}
 
                     {!canAccessLesson(currentLesson) && (
                       <div className="locked-lesson-message">
-                        <p>🔒 Cette leçon est réservée aux étudiants ayant acheté le cours.</p>
+                        <p>Cette leçon est réservée aux étudiants ayant acheté le cours.</p>
                         <button 
                           onClick={handlePurchase}
                           className="purchase-btn"
@@ -472,65 +556,111 @@ export default function CourseDetail() {
         </div>
       )}
 
+      {activeTab === 'player' && (
+        <div className="player-tab">
+          {isPurchased ? (
+            <CoursePlayerIntegrated course={course} />
+          ) : (
+            <div className="purchase-required">
+              <div className="purchase-message">
+                <h3>Accédez au lecteur de cours complet</h3>
+                <p>Achetez ce cours pour débloquer toutes les fonctionnalités du lecteur :</p>
+                <ul>
+                  <li>Navigation fluide entre les leçons</li>
+                  <li>Suivi de progression en temps réel</li>
+                  <li>Téléchargement des ressources</li>
+                  <li>Interface optimisée pour l'apprentissage</li>
+                </ul>
+                <button onClick={handlePurchase} className="btn btn-primary large">
+                  Acheter le cours - {course.price} TND
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'quizzes' && (
         <CourseQuizzes courseId={course.id} />
       )}
 
-      {activeTab === 'resources' && (
-        <div className="resources-tab">
-          <div className="resources-content">
-            <h2>📎 Ressources du Cours</h2>
-            <div className="resources-list">
-              {course.includes && course.includes.length > 0 ? (
-                course.includes.map((resource, index) => (
-                  <div key={index} className="resource-item">
-                    <h3>📖 {resource}</h3>
-                    <p>Ressource incluse avec votre cours</p>
-                    <button className="btn btn-secondary">
-                      📥 Télécharger
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="no-resources">
-                  <p>Aucune ressource supplémentaire disponible pour ce cours.</p>
+     {activeTab === 'resources' && (
+  <div className="resources-tab">
+    <div className="resources-content">
+      <h2>📚 Ressources du Cours</h2>
+      
+      {filesLoading ? (
+        <div className="resources-loading">
+          <div className="loading-spinner"></div>
+          <p>Chargement des ressources...</p>
+        </div>
+      ) : courseFiles.length === 0 ? (
+        <div className="no-resources">
+          <div className="no-resources-icon">📁</div>
+          <h3>Aucune ressource disponible</h3>
+          <p>Ce cours ne contient pas encore de ressources téléchargeables.</p>
+          {user && (
+            <button 
+              onClick={async () => {
+                // Option pour ajouter des données de démo
+                await fileStorageService.addDemoFiles();
+                // Recharger les fichiers
+                const files = await fileStorageService.getCourseFiles(course.id);
+                setCourseFiles(files);
+              }}
+              className="btn btn-secondary"
+            >
+              Charger des ressources de démonstration
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="resources-list">
+          {courseFiles.map(file => (
+            <div key={file._id} className="resource-item">
+              <div className="resource-icon">
+                {file.type === 'pdf' ? '📄' : 
+                 file.type === 'video' ? '🎬' : 
+                 file.type === 'code' ? '💻' : '📎'}
+              </div>
+              
+              <div className="resource-info">
+                <h4>{file.name}</h4>
+                <p>{file.description || 'Ressource du cours'}</p>
+                <div className="resource-meta">
+                  <span className="file-type">{file.type}</span>
+                  {file.size && (
+                    <span className="file-size">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  )}
+                  <span className="upload-date">
+                    {new Date(file.uploadDate || file.createdAt).toLocaleDateString('fr-FR')}
+                  </span>
                 </div>
-              )}
+              </div>
+              
+              <div className="resource-actions">
+                <button 
+                  className="download-btn"
+                  onClick={() => {
+                    if (file.url && file.url !== '#') {
+                      window.open(file.url, '_blank');
+                    } else {
+                      alert('Lien de téléchargement non disponible');
+                    }
+                  }}
+                >
+                  📥 Télécharger
+                </button>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
-
-      {/* Course Info Sections */}
-      <div className="course-info-sections">
-        <div className="info-grid">
-          <div className="info-card">
-            <h3>🎯 Objectifs du cours</h3>
-            <ul className="objectives-list">
-              {course.objectives && course.objectives.length > 0 ? (
-                course.objectives.map((objective, index) => (
-                  <li key={index}>{objective}</li>
-                ))
-              ) : (
-                <li>Aucun objectif défini pour ce cours.</li>
-              )}
-            </ul>
-          </div>
-
-          <div className="info-card">
-            <h3>📋 Ce qui est inclus</h3>
-            <ul className="requirements-list">
-              {course.includes && course.includes.length > 0 ? (
-                course.includes.map((item, index) => (
-                  <li key={index}>✅ {item}</li>
-                ))
-              ) : (
-                <li>Accès complet au contenu du cours</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

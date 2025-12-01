@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Certificats - Lecture sécurisée
+    match /certificates/{certificateId} {
+      allow read, write: if request.auth != null 
+        && (request.auth.uid == resource.data.userId 
+            || hasRole('admin'));
+      
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.certificateId is string
+        && request.resource.data.createdAt is timestamp;
+      
+      allow update: if request.auth != null 
+        && (request.auth.uid == resource.data.userId 
+            || hasRole('admin'))
+        && request.resource.data.userId == resource.data.userId;
+    }
+    
+    // Fonction utilitaire pour vérifier les rôles admin
+    function hasRole(role) {
+      return request.auth.token[role] == true;
+    }
+  }
+}

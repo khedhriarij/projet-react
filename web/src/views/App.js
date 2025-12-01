@@ -2,12 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import '../styles/App.css';
 
-
-
+import CoursePlayer from './pages/course/CoursePlayer';
+import TestMongoConnection from './components/TestMongoConnection';
 // Context
 import { CourseProvider } from '../viewmodels/context/CourContext'; 
 import { QuizProvider } from '../viewmodels/context/QuizContext';
-
 
 import QuizList from './components/Quiz/QuizList.jsx';
 import QuizPlayer from './components/Quiz/QuizPlayer.jsx';
@@ -22,21 +21,27 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Create from './pages/create/Create';
 import Login from './pages/login/Login';
 import Signup from './pages/signup/Signup';
-
-
 import Catalog from './pages/catalog/Catalog';
 import CourseDetail from './pages/course/CourseDetail';
 import MyCourses from './pages/my-courses/MyCourses';
+
+// ✅ AJOUT CRITIQUE : Paiement Stripe
+import PaymentSuccess from './pages/payment/PaymentSuccess';
+import PaymentCancel from './pages/payment/PaymentCancel';
 
 // Import des composants UI
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import OnlineUsers from './components/OnlineUsers';
+import CertificatePage from './pages/CertificatePage/CertificatePage';
 
 // Import des hooks et composants de protection
 import { useAuthContext } from '../viewmodels/hooks/useAuthContext';
 import AdminRoute from './components/AdminRoute';
 import { useAdmin } from '../viewmodels/hooks/UseAdmin';
+import ProfileForm from './components/Profile/ProfileForm';
+import PublicCertificateVerification from './components/Certificate/PublicCertificateVerification';
+import AdminCertificateManager from './pages/dashboard/admin/AdminCertificateManager';
 
 function App() {
   const { user, authIsReady } = useAuthContext();
@@ -71,15 +76,24 @@ function App() {
           <BrowserRouter>
             {user && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
             <div className='container'>
-             
               <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
               <Routes>
-                {/* Route principale - Redirection intelligente */}
+                {/* Route principale */}
                 <Route 
                   path="/" 
                   element={
                     user ? <Navigate to="/catalog" replace /> : <Navigate to="/login" replace />
                   } 
+                />
+                
+                {/* ✅ ROUTES DE PAIEMENT STRIPE (AJOUT CRITIQUE) */}
+                <Route 
+                  path="/payment/success" 
+                  element={user ? <PaymentSuccess /> : <Navigate to="/login" replace />} 
+                />
+                <Route 
+                  path="/payment/cancel" 
+                  element={user ? <PaymentCancel /> : <Navigate to="/login" replace />} 
                 />
                 
                 {/* Dashboard Admin */}
@@ -118,7 +132,7 @@ function App() {
                   } 
                 />
                 
-                {/* Catalogue des cours - PAGE D'ACCUEIL PRINCIPALE */}
+                {/* Catalogue des cours */}
                 <Route 
                   path="/catalog" 
                   element={user ? <Catalog /> : <Navigate to="/login" replace />} 
@@ -130,13 +144,19 @@ function App() {
                   element={user ? <CourseDetail /> : <Navigate to="/login" replace />} 
                 />
                 
+                {/* Lecture du cours */}
+                <Route 
+                  path="/course/:id/learn" 
+                  element={user ? <CoursePlayer /> : <Navigate to="/login" replace />} 
+                />
+                
                 {/* Mes cours */}
                 <Route 
                   path="/my-courses" 
                   element={user ? <MyCourses /> : <Navigate to="/login" replace />} 
                 />
                 
-                {/* ✅ CORRECTION : Routes Quiz optimisées sans doublons */}
+                {/* Routes Quiz */}
                 <Route 
                   path="/admin/quiz/*" 
                   element={
@@ -146,7 +166,6 @@ function App() {
                   } 
                 />
                 
-                {/* Jouer aux quiz */}
                 <Route 
                   path="/quiz/:quizId" 
                   element={user ? <QuizPlayer /> : <Navigate to="/login" replace />} 
@@ -157,7 +176,33 @@ function App() {
                   element={user ? <QuizResults /> : <Navigate to="/login" replace />} 
                 />
                 
-                {/* Login */}
+                {/* Certificats */}
+                <Route 
+                  path="/certificates" 
+                  element={user ? <CertificatePage /> : <Navigate to="/login" replace />} 
+                />
+                
+                <Route 
+                  path="/verify-certificate/:certificateId" 
+                  element={<PublicCertificateVerification />} 
+                />
+                
+                <Route 
+                  path="/admin/certificates" 
+                  element={
+                    <AdminRoute>
+                      <AdminCertificateManager />
+                    </AdminRoute>
+                  } 
+                />
+                
+                {/* Profil */}
+                <Route 
+                  path="/profile" 
+                  element={user ? <ProfileForm /> : <Navigate to="/login" replace />} 
+                />
+                
+                {/* Login/Signup */}
                 <Route 
                   path="/login" 
                   element={!user ? <Login /> : <Navigate to="/" replace />} 
@@ -168,14 +213,10 @@ function App() {
                   element={!user ? <Signup /> : <Navigate to="/" replace />} 
                 />
                 
-               
+                {/* Test MongoDB */}
+                <Route path="/test-mongo" element={<TestMongoConnection />} />
                 
-                {/* Route fallback */}
-                <Route 
-                  path="*" 
-                  element={<Navigate to="/" replace />} 
-                />
-                
+                {/* Routes quiz supplémentaires */}
                 <Route 
                   path="/quiz-builder" 
                   element={
@@ -184,9 +225,16 @@ function App() {
                     </AdminRoute>
                   } 
                 />
+                
                 <Route 
                   path="/quiz-list" 
                   element={user ? <QuizList /> : <Navigate to="/login" replace />} 
+                />
+                
+                {/* Route fallback */}
+                <Route 
+                  path="*" 
+                  element={<Navigate to="/" replace />} 
                 />
               </Routes>
             </div>

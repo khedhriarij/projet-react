@@ -7,6 +7,7 @@ import OverviewTab from './components/OverviewTab';
 import UsersTab from './components/UsersTab';
 import PaymentsTab from './components/PaymentsTab';
 import QuizTab from './components/QuizTab';
+
 import './admindashboard.css';
 
 const AdminDashboard = () => {
