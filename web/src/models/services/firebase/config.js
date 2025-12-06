@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDRHE_sVlpP0X9K2yDwNnOXfFeOJNzA2Mg",
   authDomain: "plateforme-educative-2020b.firebaseapp.com",
   projectId: "plateforme-educative-2020b",
-  storageBucket: "plateforme-educative-2020b.firebasestorage.app",
+  storageBucket: "plateforme-educative-2020b.appspot.com",
   messagingSenderId: "933499726809",
   appId: "1:933499726809:web:12277936f106d5eb4e47c8"
 };

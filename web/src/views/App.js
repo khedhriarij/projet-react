@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import '../styles/App.css';
+//import logo from '../assets/learnup_logo.jpeg';
 
 import CoursePlayer from './pages/course/CoursePlayer';
 import TestMongoConnection from './components/TestMongoConnection';

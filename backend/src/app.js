@@ -1,47 +1,74 @@
+// backend/app.js - Version finale
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 require('dotenv').config();
 
+// Import des routes
+const authRoutes = require('./routes/auth');
+const courseRoutes = require('./routes/courses');
+const lessonRoutes = require('./routes/lessons');
+const paymentRoutes = require('./routes/payment');
+const quizRoutes = require('./routes/quiz');
+const progressRoutes = require('./routes/progress');
 const fileRoutes = require('./routes/files');
 
 const app = express();
 
-// ========== ⚡ MIDDLEWARE CRITIQUE POUR NGrok ==========
-// AJOUTEZ CES 5 LIGNES IMMÉDIATEMENT APRÈS app = express()
+// ========== CONFIGURATION DE SÉCURITÉ ==========
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
+app.use(morgan('dev'));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Middleware ngrok
 app.use((req, res, next) => {
-  res.header('ngrok--skip-browser-warning', 'true');
-  console.log(`✅ Header ngrok appliqué pour: ${req.method} ${req.url}`);
+  res.header('ngrok-skip-browser-warning', 'true');
   next();
 });
-// =======================================================
 
-// VOTRE CODE EXISTANT - NE CHANGEZ RIEN CI-DESSOUS
-app.use(cors());
-app.use(express.json());
+// ========== CONNEXION DATABASE ==========
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  maxPoolSize: 10
+})
+.then(() => console.log('✅ MongoDB connecté'))
+.catch(err => {
+  console.error('❌ Erreur MongoDB:', err);
+  process.exit(1);
+});
 
-// Connexion à MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('✅ Connecté à MongoDB'))
-.catch(err => console.error('❌ Erreur de connexion à MongoDB:', err));
-
-// Routes
+// ========== ROUTES API ==========
+app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/progress', progressRoutes);
 app.use('/api/files', fileRoutes);
 
-// Route de santé
+// ========== ROUTES DE SANTÉ ==========
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Backend EduPlatform opérationnel',
-    timestamp: new Date().toISOString()
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
-// ========== ROUTES POUR PAIEMENT (AJOUTEZ CES 3 ROUTES) ==========
+// ========== ROUTES PAIEMENT ==========
 app.get('/payment/success', (req, res) => {
   res.json({ 
     success: true,
-    message: 'Paiement réussi - Redirection en cours...'
+    message: 'Paiement réussi ! Redirection...'
   });
 });
 
@@ -52,15 +79,19 @@ app.get('/payment/cancel', (req, res) => {
   });
 });
 
-app.post('/api/payment/webhook', (req, res) => {
-  console.log('🔔 Webhook Paymee reçu:', req.body);
-  res.status(200).json({ received: true });
+// ========== GESTION DES ERREURS ==========
+app.use((err, req, res, next) => {
+  console.error('🔥 Erreur:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'production' ? 'Erreur serveur' : err.message
+  });
 });
-// =======================================================
 
+// ========== DÉMARRAGE SERVEUR ==========
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur backend démarré sur le port ${PORT}`);
-  console.log(`🛡️  Middleware ngrok activé - Avertissements désactivés`);
-  console.log(`🔗 URL: https://nonalkaloidal-sesquicentennially-kevin.ngrok-free.dev`);
+  console.log(` Serveur démarré sur le port ${PORT}`);
+  console.log(` Environnement: ${process.env.NODE_ENV || 'development'}`);
+  console.log(` URL: ${process.env.BACKEND_URL || `http://localhost:${PORT}`}`);
 });

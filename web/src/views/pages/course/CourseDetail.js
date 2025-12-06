@@ -584,83 +584,79 @@ export default function CourseDetail() {
         <CourseQuizzes courseId={course.id} />
       )}
 
-     {activeTab === 'resources' && (
+  {activeTab === 'resources' && (
   <div className="resources-tab">
     <div className="resources-content">
-      <h2>📚 Ressources du Cours</h2>
-      
-      {filesLoading ? (
-        <div className="resources-loading">
-          <div className="loading-spinner"></div>
-          <p>Chargement des ressources...</p>
-        </div>
-      ) : courseFiles.length === 0 ? (
-        <div className="no-resources">
-          <div className="no-resources-icon">📁</div>
-          <h3>Aucune ressource disponible</h3>
-          <p>Ce cours ne contient pas encore de ressources téléchargeables.</p>
-          {user && (
-            <button 
-              onClick={async () => {
-                // Option pour ajouter des données de démo
-                await fileStorageService.addDemoFiles();
-                // Recharger les fichiers
-                const files = await fileStorageService.getCourseFiles(course.id);
-                setCourseFiles(files);
-              }}
-              className="btn btn-secondary"
-            >
-              Charger des ressources de démonstration
-            </button>
-          )}
+      <h2>📚 Ressources du cours</h2>
+
+      {/* Vérification accès */}
+      {!isPurchased ? (
+        <div className="locked-resources">
+          <h3>🔒 Accès réservé</h3>
+          <p>Vous devez acheter ce cours pour accéder aux fichiers téléchargeables.</p>
+          <button onClick={handlePurchase} className="purchase-btn">
+            Acheter le cours – {course.price} TND
+          </button>
         </div>
       ) : (
         <div className="resources-list">
-          {courseFiles.map(file => (
-            <div key={file._id} className="resource-item">
-              <div className="resource-icon">
-                {file.type === 'pdf' ? '📄' : 
-                 file.type === 'video' ? '🎬' : 
-                 file.type === 'code' ? '💻' : '📎'}
-              </div>
-              
-              <div className="resource-info">
-                <h4>{file.name}</h4>
-                <p>{file.description || 'Ressource du cours'}</p>
-                <div className="resource-meta">
-                  <span className="file-type">{file.type}</span>
-                  {file.size && (
-                    <span className="file-size">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                  )}
-                  <span className="upload-date">
-                    {new Date(file.uploadDate || file.createdAt).toLocaleDateString('fr-FR')}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="resource-actions">
-                <button 
-                  className="download-btn"
-                  onClick={() => {
-                    if (file.url && file.url !== '#') {
-                      window.open(file.url, '_blank');
-                    } else {
-                      alert('Lien de téléchargement non disponible');
-                    }
-                  }}
-                >
-                  📥 Télécharger
-                </button>
-              </div>
+          {filesLoading ? (
+            <div className="resources-loading">
+              <div className="loading-spinner"></div>
+              <p>Chargement des ressources...</p>
             </div>
-          ))}
+          ) : courseFiles.length === 0 ? (
+            <div className="no-resources">
+              <h3>Aucun fichier disponible</h3>
+              <p>Les ressources seront ajoutées prochainement.</p>
+            </div>
+          ) : (
+            <ul className="resource-items">
+              {courseFiles.map((file, index) => {
+                const fileIcon = {
+                  pdf: "📄",
+                  image: "🖼️",
+                  doc: "📝",
+                  ppt: "📊",
+                  zip: "📦",
+                  video: "🎬",
+                }[file.type] || "📁";
+
+                return (
+                  <li key={file._id ?? index} className="resource-item">
+                    <div className="resource-info">
+                      <span className="resource-icon">{fileIcon}</span>
+                      <div>
+                        <h4>{file.name}</h4>
+                        <span className="resource-size">
+                          {file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      className="download-btn"
+                      onClick={() => {
+                        if (file.url) {
+                          window.open(file.url, "_blank");
+                        } else {
+                          alert("Lien indisponible pour ce fichier.");
+                        }
+                      }}
+                    >
+                      Télécharger
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
     </div>
   </div>
 )}
+
     </div>
   );
 }

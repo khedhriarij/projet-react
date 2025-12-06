@@ -15,22 +15,27 @@ const AdminDashboard = () => {
     user,
     isAdmin,
     courses,
-    quizzes, // Ajout des quizzes
+    quizzes,
+    users,
+    payments,
     activeTab,
     setActiveTab,
     showNewCourseForm,
     newCourse,
     defaultImages,
-    lastUpdated, // Ajout de lastUpdated
+    lastUpdated,
+    isLoading,
+    stats,
     handleInputChange,
     handleImageUrlChange,
     handleSelectDefaultImage,
     handleSubmitCourse,
     handleDeleteCourse,
-    handleUpdateCourse, // Ajout de la fonction de mise à jour
-    handleUpdateQuiz, // Ajout de la fonction de mise à jour des quiz
+    handleUpdateCourse,
+    handleUpdateQuiz,
     handleNewCourseClick,
-    handleCloseModal
+    handleCloseModal,
+    refreshData
   } = useAdminDashboard();
 
   if (!isAdmin) {
@@ -49,9 +54,14 @@ const AdminDashboard = () => {
       case 'overview':
         return (
           <OverviewTab 
-            courses={courses} 
+            courses={courses}
             quizzes={quizzes}
+            users={users}
+            payments={payments}
             lastUpdated={lastUpdated}
+            stats={stats}
+            isLoading={isLoading}
+            onRefresh={refreshData}
           />
         );
       case 'courses':
@@ -60,26 +70,33 @@ const AdminDashboard = () => {
             courses={courses}
             onNewCourse={handleNewCourseClick}
             onDeleteCourse={handleDeleteCourse}
-            onUpdateCourse={handleUpdateCourse} // Passage de la fonction de mise à jour
+            onUpdateCourse={handleUpdateCourse}
+            isLoading={isLoading}
           />
         );
       case 'quizzes':
         return (
           <QuizTab 
             quizzes={quizzes}
-            onUpdateQuiz={handleUpdateQuiz} // Passage de la fonction de mise à jour
+            onUpdateQuiz={handleUpdateQuiz}
+            isLoading={isLoading}
           />
         );
       case 'users':
-        return <UsersTab />;
+        return <UsersTab users={users} isLoading={isLoading} />;
       case 'payments':
-        return <PaymentsTab />;
+        return <PaymentsTab payments={payments} isLoading={isLoading} />;
       default:
         return (
           <OverviewTab 
-            courses={courses} 
+            courses={courses}
             quizzes={quizzes}
+            users={users}
+            payments={payments}
             lastUpdated={lastUpdated}
+            stats={stats}
+            isLoading={isLoading}
+            onRefresh={refreshData}
           />
         );
     }
@@ -87,16 +104,29 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Chargement des données...</p>
+        </div>
+      )}
+      
       <div className="admin-layout">
         {/* Navigation Sidebar */}
         <nav className="admin-sidebar">
           <div className="sidebar-header">
             <h2>EduPlatform Admin</h2>
             <p>Tableau de Bord</p>
-            {/* Affichage de la dernière mise à jour dans la sidebar */}
             {lastUpdated && (
               <div className="last-updated-sidebar">
                 <small>Dernière mise à jour: {new Date(lastUpdated).toLocaleTimeString('fr-FR')}</small>
+                <button 
+                  className="refresh-btn"
+                  onClick={refreshData}
+                  
+                >
+                  
+                </button>
               </div>
             )}
           </div>
@@ -116,6 +146,9 @@ const AdminDashboard = () => {
             >
               <span className="nav-icon">📚</span>
               <span className="nav-label">Gestion des Cours</span>
+              {courses.length > 0 && (
+                <span className="nav-badge">{courses.length}</span>
+              )}
             </button>
             
             <button 
@@ -124,6 +157,9 @@ const AdminDashboard = () => {
             >
               <span className="nav-icon">📝</span>
               <span className="nav-label">Gestion des Quiz</span>
+              {quizzes.length > 0 && (
+                <span className="nav-badge">{quizzes.length}</span>
+              )}
             </button>
 
             <button 
@@ -132,6 +168,9 @@ const AdminDashboard = () => {
             >
               <span className="nav-icon">👥</span>
               <span className="nav-label">Utilisateurs</span>
+              {users.length > 0 && (
+                <span className="nav-badge">{users.length}</span>
+              )}
             </button>
             
             <button 
@@ -140,6 +179,11 @@ const AdminDashboard = () => {
             >
               <span className="nav-icon">💳</span>
               <span className="nav-label">Paiements</span>
+              {payments.length > 0 && (
+                <span className="nav-badge">
+                  {payments.filter(p => p.status === 'completed').length}
+                </span>
+              )}
             </button>
           </div>
         </nav>
@@ -158,13 +202,22 @@ const AdminDashboard = () => {
               <p>Bienvenue, {user && user.displayName ? user.displayName : 'Administrateur'} 👋</p>
             </div>
             
-            {/* Indicateur de dernière mise à jour dans le header */}
-            {lastUpdated && (
-              <div className="last-updated-header">
-                <span className="update-indicator">🔄</span>
-                <span>Mis à jour: {new Date(lastUpdated).toLocaleString('fr-FR')}</span>
-              </div>
-            )}
+            <div className="header-actions">
+              <button 
+                className="refresh-data-btn"
+                onClick={refreshData}
+                disabled={isLoading}
+              >
+                {isLoading ? '🔄' : '🔄'} Rafraîchir
+              </button>
+              
+              {lastUpdated && (
+                <div className="last-updated-header">
+                  <span className="update-indicator">🔄</span>
+                  <span>Mis à jour: {new Date(lastUpdated).toLocaleString('fr-FR')}</span>
+                </div>
+              )}
+            </div>
           </header>
 
           <div className="admin-content">
