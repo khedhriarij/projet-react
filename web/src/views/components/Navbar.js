@@ -1,11 +1,10 @@
-// components/Navbar.js
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../../viewmodels/hooks/useAuthContext';
 import { useLogout } from '../../viewmodels/hooks/useLogout';
-import logo from '../../assets/learnup_logo.jpeg';
+import logo from '../../assets/logo.png';
+import CartIcon from './CartIcon/CartIcon';
 //styles & images
 import './Navbar.css'
-
 
 export default function Navbar({ onMenuClick }){
   
@@ -28,6 +27,14 @@ export default function Navbar({ onMenuClick }){
           <img src={logo} alt="platforme logo"/>
           <span>LearnUp Platform</span>
         </li>
+
+        {/* ✅ FIX: CartIcon should be OUTSIDE the !user condition */}
+        {/* CartIcon should show for LOGGED-IN users only */}
+        {user && (
+          <li>
+            <CartIcon />
+          </li>
+        )}
 
         {!user && (
           <>

@@ -8,6 +8,7 @@ import TestMongoConnection from './components/TestMongoConnection';
 // Context
 import { CourseProvider } from '../viewmodels/context/CourContext'; 
 import { QuizProvider } from '../viewmodels/context/QuizContext';
+import { CartProvider } from '../viewmodels/context/CartContext';
 
 import QuizList from './components/Quiz/QuizList.jsx';
 import QuizPlayer from './components/Quiz/QuizPlayer.jsx';
@@ -25,6 +26,7 @@ import Signup from './pages/signup/Signup';
 import Catalog from './pages/catalog/Catalog';
 import CourseDetail from './pages/course/CourseDetail';
 import MyCourses from './pages/my-courses/MyCourses';
+import Cart from './pages/cart/Cart';
 
 // ✅ AJOUT CRITIQUE : Paiement Stripe
 import PaymentSuccess from './pages/payment/PaymentSuccess';
@@ -72,177 +74,184 @@ function App() {
   
   return (
     <CourseProvider>
-      <QuizProvider>
-        <div className="App">
-          <BrowserRouter>
-            {user && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
-            <div className='container'>
-              <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-              <Routes>
-                {/* Route principale */}
-                <Route 
-                  path="/" 
-                  element={
-                    user ? <Navigate to="/catalog" replace /> : <Navigate to="/login" replace />
-                  } 
-                />
-                
-                {/* ✅ ROUTES DE PAIEMENT STRIPE (AJOUT CRITIQUE) */}
-                <Route 
-                  path="/payment/success" 
-                  element={user ? <PaymentSuccess /> : <Navigate to="/login" replace />} 
-                />
-                <Route 
-                  path="/payment/cancel" 
-                  element={user ? <PaymentCancel /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Dashboard Admin */}
-                <Route 
-                  path="/admin-dashboard" 
-                  element={
-                    <AdminRoute>
-                      <AdminDashboard />
-                    </AdminRoute>
-                  } 
-                />
-                
-                {/* Dashboard Utilisateur */}
-                <Route 
-                  path="/user-dashboard" 
-                  element={user ? <UserDashboard /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Dashboard original */}
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <AdminRoute>
-                      <Dashboard />
-                    </AdminRoute>
-                  } 
-                />
-                
-                {/* Création de cours pour admin */}
-                <Route 
-                  path="/create" 
-                  element={
-                    <AdminRoute>
-                      <Create />
-                    </AdminRoute>
-                  } 
-                />
-                
-                {/* Catalogue des cours */}
-                <Route 
-                  path="/catalog" 
-                  element={user ? <Catalog /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Détail du cours */}
-                <Route 
-                  path="/course/:id" 
-                  element={user ? <CourseDetail /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Lecture du cours */}
-                <Route 
-                  path="/course/:id/learn" 
-                  element={user ? <CoursePlayer /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Mes cours */}
-                <Route 
-                  path="/my-courses" 
-                  element={user ? <MyCourses /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Routes Quiz */}
-                <Route 
-                  path="/admin/quiz/*" 
-                  element={
-                    <AdminRoute>
-                      <QuizManagement />
-                    </AdminRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/quiz/:quizId" 
-                  element={user ? <QuizPlayer /> : <Navigate to="/login" replace />} 
-                />
-                
-                <Route 
-                  path="/quiz/results/:quizId" 
-                  element={user ? <QuizResults /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Certificats */}
-                <Route 
-                  path="/certificates" 
-                  element={user ? <CertificatePage /> : <Navigate to="/login" replace />} 
-                />
-                
-                <Route 
-                  path="/verify-certificate/:certificateId" 
-                  element={<PublicCertificateVerification />} 
-                />
-                
-                <Route 
-                  path="/admin/certificates" 
-                  element={
-                    <AdminRoute>
-                      <AdminCertificateManager />
-                    </AdminRoute>
-                  } 
-                />
-                
-                {/* Profil */}
-                <Route 
-                  path="/profile" 
-                  element={user ? <ProfileForm /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Login/Signup */}
-                <Route 
-                  path="/login" 
-                  element={!user ? <Login /> : <Navigate to="/" replace />} 
-                />
-                
-                <Route 
-                  path="/signup"  
-                  element={!user ? <Signup /> : <Navigate to="/" replace />} 
-                />
-                
-                {/* Test MongoDB */}
-                <Route path="/test-mongo" element={<TestMongoConnection />} />
-                
-                {/* Routes quiz supplémentaires */}
-                <Route 
-                  path="/quiz-builder" 
-                  element={
-                    <AdminRoute>
-                      <QuizBuilder />
-                    </AdminRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/quiz-list" 
-                  element={user ? <QuizList /> : <Navigate to="/login" replace />} 
-                />
-                
-                {/* Route fallback */}
-                <Route 
-                  path="*" 
-                  element={<Navigate to="/" replace />} 
-                />
-              </Routes>
-            </div>
-            {user && <OnlineUsers/>}
-          </BrowserRouter>
-        </div>
-      </QuizProvider>
+      <CartProvider>
+        <QuizProvider>
+          <div className="App">
+            <BrowserRouter>
+              {user && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+              <div className='container'>
+                <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+                <Routes>
+                  {/* Route principale */}
+                  <Route 
+                    path="/" 
+                    element={
+                      user ? <Navigate to="/catalog" replace /> : <Navigate to="/login" replace />
+                    } 
+                  />
+                  
+                  {/* ✅ ROUTES DE PAIEMENT STRIPE (AJOUT CRITIQUE) */}
+                  <Route 
+                    path="/payment/success" 
+                    element={user ? <PaymentSuccess /> : <Navigate to="/login" replace />} 
+                  />
+                  <Route 
+                    path="/payment/cancel" 
+                    element={user ? <PaymentCancel /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Dashboard Admin */}
+                  <Route 
+                    path="/admin-dashboard" 
+                    element={
+                      <AdminRoute>
+                        <AdminDashboard />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  {/* Dashboard Utilisateur */}
+                  <Route 
+                    path="/user-dashboard" 
+                    element={user ? <UserDashboard /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Dashboard original */}
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <AdminRoute>
+                        <Dashboard />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  {/* Création de cours pour admin */}
+                  <Route 
+                    path="/create" 
+                    element={
+                      <AdminRoute>
+                        <Create />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  {/* Catalogue des cours */}
+                  <Route 
+                    path="/catalog" 
+                    element={user ? <Catalog /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Détail du cours */}
+                  <Route 
+                    path="/course/:id" 
+                    element={user ? <CourseDetail /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Lecture du cours */}
+                  <Route 
+                    path="/course/:id/learn" 
+                    element={user ? <CoursePlayer /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Mes cours */}
+                  <Route 
+                    path="/my-courses" 
+                    element={user ? <MyCourses /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Routes Quiz */}
+                  <Route 
+                    path="/admin/quiz/*" 
+                    element={
+                      <AdminRoute>
+                        <QuizManagement />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/quiz/:quizId" 
+                    element={user ? <QuizPlayer /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  <Route 
+                    path="/quiz/results/:quizId" 
+                    element={user ? <QuizResults /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Certificats */}
+                  <Route 
+                    path="/certificates" 
+                    element={user ? <CertificatePage /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  <Route 
+                    path="/verify-certificate/:certificateId" 
+                    element={<PublicCertificateVerification />} 
+                  />
+                  
+                  <Route 
+                    path="/admin/certificates" 
+                    element={
+                      <AdminRoute>
+                        <AdminCertificateManager />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  {/* Profil */}
+                  <Route 
+                    path="/profile" 
+                    element={user ? <ProfileForm /> : <Navigate to="/login" replace />} 
+                  />
+                  
+                  {/* Login/Signup */}
+                  <Route 
+                    path="/login" 
+                    element={!user ? <Login /> : <Navigate to="/" replace />} 
+                  />
+                  
+                  <Route 
+                    path="/signup"  
+                    element={!user ? <Signup /> : <Navigate to="/" replace />} 
+                  />
+                  
+                  {/* Test MongoDB */}
+                  <Route path="/test-mongo" element={<TestMongoConnection />} />
+                  
+                  {/* Routes quiz supplémentaires */}
+                  <Route 
+                    path="/quiz-builder" 
+                    element={
+                      <AdminRoute>
+                        <QuizBuilder />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/quiz-list" 
+                    element={user ? <QuizList /> : <Navigate to="/login" replace />} 
+                  />
+                  <Route 
+                    path="/cart" 
+                    element={user ? <Cart /> : <Navigate to="/login" replace />} 
+                  />
+
+                  
+                  {/* Route fallback */}
+                  <Route 
+                    path="*" 
+                    element={<Navigate to="/" replace />} 
+                  />
+                </Routes>
+              </div>
+              {user && <OnlineUsers/>}
+            </BrowserRouter>
+          </div>
+        </QuizProvider>
+      </CartProvider>
     </CourseProvider> 
   );
 }

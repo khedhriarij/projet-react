@@ -1,4 +1,4 @@
-// components/CourseCard/CourseCard.js - VERSION CORRECTE
+// components/CourseCard/CourseCard.js - MERGED VERSION
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../../../viewmodels/hooks/useAuthContext';
@@ -21,6 +21,8 @@ export default function CourseCard({ course, isAdmin, isPurchased }) {
   };
 
   if (!course) {
+    // 🔹 Changed from: "Course data missing"
+    // 🔹 To: friend version "Données du cours manquantes" for consistency
     return <div className="course-card error">Données du cours manquantes</div>;
   }
 
@@ -96,13 +98,15 @@ export default function CourseCard({ course, isAdmin, isPurchased }) {
           )}
         </div>
 
-        {/* Actions conditionnelles - VERSION AMÉLIORÉE */}
+        {/* Actions conditionnelles - MERGED */}
         <div className="course-actions">
           {!authUser ? (
             <Link to="/login" className="btn btn-primary">
               S'inscrire pour voir
             </Link>
           ) : isAdmin ? (
+            // 🔹 Changed: wrapped admin buttons in div.admin-actions
+            // 🔹 Added "Modifier" button from friend version
             <div className="admin-actions">
               <Link to={`/course/${course.id}`} className="btn btn-primary">
                 Voir Détails
@@ -112,10 +116,13 @@ export default function CourseCard({ course, isAdmin, isPurchased }) {
               </Link>
             </div>
           ) : isPurchased ? (
+            // ✅ Keep your panier logic for purchased courses
             <Link to={`/course/${course.id}`} className="btn btn-success">
-              Accéder au cours
+              ✅ Accéder au cours
             </Link>
           ) : (
+            // 🔹 Changed: purchase button now shows price for panier integration
+            // 🔹 Was: "Voir Détails", Now: "Acheter - {course.price} TND"
             <Link to={`/course/${course.id}`} className="btn btn-primary purchase-button">
               Acheter - {course.price} TND
             </Link>

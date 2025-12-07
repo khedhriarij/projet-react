@@ -1,4 +1,4 @@
-// pages/catalog/Catalog.js - VERSION OPTIMISÉE
+// pages/catalog/Catalog.js - COMPLETE FIX
 import { useState, useMemo, useEffect } from 'react';
 import { useAuthContext } from '../../../viewmodels/hooks/useAuthContext';
 import { useAdmin } from '../../../viewmodels/hooks/UseAdmin';
@@ -21,7 +21,7 @@ export default function Catalog() {
   const [purchasedCourseIds, setPurchasedCourseIds] = useState(new Set());
   const [loadingPurchases, setLoadingPurchases] = useState(false);
 
-  // Chargement des cours achetés
+  // ✅ Load purchased courses ONCE at the catalog level
   useEffect(() => {
     const loadPurchasedCourses = async () => {
       if (!user) {
@@ -31,11 +31,15 @@ export default function Catalog() {
 
       try {
         setLoadingPurchases(true);
+        console.log('🔄 [Catalog] Loading purchased courses for user:', user.uid);
+        
         const purchasedCourses = await getPurchasedCourses();
         const purchasedIds = new Set(purchasedCourses.map(purchase => purchase.courseId));
+        
+        console.log('✅ [Catalog] Purchased course IDs:', Array.from(purchasedIds));
         setPurchasedCourseIds(purchasedIds);
       } catch (error) {
-        console.error('Erreur chargement des achats:', error);
+        console.error('❌ [Catalog] Error loading purchased courses:', error);
         setPurchasedCourseIds(new Set());
       } finally {
         setLoadingPurchases(false);
@@ -45,12 +49,11 @@ export default function Catalog() {
     loadPurchasedCourses();
   }, [user, getPurchasedCourses]);
 
-  // Vérification si un cours est acheté
+  // ✅ Check if course is purchased
   const isCoursePurchased = (courseId) => {
     return purchasedCourseIds.has(courseId);
   };
 
-  // Filtrage et tri des cours
   const filteredCourses = useMemo(() => {
     let filtered = courses;
 

@@ -7,6 +7,7 @@ import { useCourseContext } from '../../../viewmodels/context/CourContext';
 import { useQuizContext } from '../../../viewmodels/context/QuizContext';
 import CoursePlayerIntegrated from './CoursePlayerIntegrated'; 
 import fileStorageService from '../../../models/services/FileStorageService';
+import { useCart } from '../../../viewmodels/context/CartContext';
 
 
 import './coursedetail.css';
@@ -118,6 +119,7 @@ export default function CourseDetail() {
   const { purchaseCourse, hasPurchasedCourse, updateCourseProgress, isProcessing } = useCoursePurchase();
   const { getCourseById } = useCourseContext();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -349,19 +351,24 @@ export default function CourseDetail() {
                 )}
               </div>
 
-              {isPurchased ? (
+               {isPurchased ? (
+
                 <div className="purchased-badge">
-                  Vous possédez ce cours
+                  ✅ Vous possédez ce cours
                 </div>
               ) : (
-                <button 
-                  onClick={handlePurchase}
-                  disabled={isProcessing}
-                  className="purchase-btn"
-                >
-                  {isProcessing ? 'Traitement...' : `Acheter maintenant - ${course.price} TND`}
-                </button>
+                <div className="purchase-actions">
+                  <button 
+                    onClick={() => addToCart(course)}
+                    className="add-to-cart-btn"
+                  >
+                    🛒 Ajouter au panier
+                  </button>
+                  
+                </div>
               )}
+
+
 
               <div className="guarantee">
                 Garantie satisfait ou remboursé 30 jours
