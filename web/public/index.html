@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    
+    <!-- Titre de votre application -->
+    <title>LearnUp - Plateforme d'apprentissage</title>
+    
+    <!-- Favicon standard -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.jpeg" type="image/x-icon" />
+    
+    <!-- Apple Touch Icon (PWA / iPhone) - plusieurs tailles -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/learnup_logo.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="%PUBLIC_URL%/learnup_logo_192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="%PUBLIC_URL%/learnup_logo_512.png" />
+    
+    <!-- Android / PWA manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Méta-données -->
+    <meta name="description" content="LearnUp - Votre plateforme d'apprentissage en ligne interactive" />
+    <meta name="keywords" content="apprentissage, cours, formation, éducation, online" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4F46E5" />
+    
+    <!-- Pour Windows -->
+    <meta name="msapplication-TileColor" content="#4F46E5" />
+    <meta name="msapplication-TileImage" content="%PUBLIC_URL%/learnup_logo.png" />
+    
+    <!-- Pour Safari pinned tab -->
+    <link rel="mask-icon" href="%PUBLIC_URL%/learnup_logo.svg" color="#4F46E5">
+    
+    <!-- Polices -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Style de base -->
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #ffffff;
+      }
+      
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>Vous devez activer JavaScript pour exécuter cette application.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
