@@ -9,15 +9,21 @@ class EnrollmentRepository {
         .collection('enrollments')
         .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Enrollment.fromJson({...doc.data(), 'id': doc.id}))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => Enrollment.fromJson(
+                  {...doc.data(), 'id': doc.id},
+                ),
+              )
+              .toList(),
+        );
   }
 
   Future<void> enrollInCourse(String userId, String courseId) async {
     try {
       final enrollmentId = '${userId}_$courseId';
-      
+
       await _firestore.collection('enrollments').doc(enrollmentId).set({
         'id': enrollmentId,
         'userId': userId,
@@ -38,10 +44,11 @@ class EnrollmentRepository {
     }
   }
 
-  Future<void> updateProgress(String enrollmentId, double progress, String nextLesson) async {
+  Future<void> updateProgress(
+      String enrollmentId, double progress, String nextLesson) async {
     try {
       final completed = progress >= 100;
-      
+
       await _firestore.collection('enrollments').doc(enrollmentId).update({
         'progress': progress,
         'lastAccessed': FieldValue.serverTimestamp(),
@@ -88,5 +95,14 @@ class EnrollmentRepository {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// 🔹 À utiliser juste après un paiement Paymee réussi
+  Future<void> enrollAfterPayment({
+    required String userId,
+    required String courseId,
+  }) async {
+    // On réutilise la logique d'inscription existante
+    await enrollInCourse(userId, courseId);
   }
 }

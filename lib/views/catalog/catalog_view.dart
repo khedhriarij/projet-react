@@ -1,7 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-// Import du widget Carte de cours
-import '../../widgets/course_card.dart';
-// Import de la vue détail pour la navigation (si nécessaire via le Grid, bien que CourseCard le gère)
+import '../../widgets/course_card.dart'; // Assure-toi que ce widget existe
 import '../courses/course_detail_view.dart';
 
 class CatalogView extends StatefulWidget {
@@ -12,223 +11,266 @@ class CatalogView extends StatefulWidget {
 }
 
 class _CatalogViewState extends State<CatalogView> {
-  // --- ÉTATS POUR LE FILTRAGE ---
   String _searchQuery = "";
   String _selectedCategory = "Tout";
+  String _selectedSort = "Par défaut";
 
-  // Liste des catégories disponibles pour les filtres
-  final List<String> _categories = ["Tout", "Design", "Développement", "Business", "Marketing"];
-
-  // --- DONNÉES DES COURS (Source unique statique pour l'exemple) ---
-  final List<Map<String, dynamic>> _allCourses = [
-    {
-      "id": "1",
-      "title": "UI/UX Design avec Figma",
-      "category": "DESIGN",
-      "instructor": "Sarah Trabelsi",
-      "rating": 4.9,
-      "students": 890,
-      "price": 69,
-      "oldPrice": 99,
-      "image": "https://img.freepik.com/free-vector/gradient-ui-ux-background_23-2149052117.jpg",
-    },
-    {
-      "id": "2",
-      "title": "Adobe Photoshop Pro",
-      "category": "DESIGN",
-      "instructor": "Youssef Guedira",
-      "rating": 4.6,
-      "students": 750,
-      "price": 59,
-      "oldPrice": 89,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Adobe_Photoshop_CC_icon.svg/600px-Adobe_Photoshop_CC_icon.svg.png",
-    },
-    {
-      "id": "3",
-      "title": "Marketing Digital 2024",
-      "category": "BUSINESS",
-      "instructor": "Mohamed Dridi",
-      "rating": 4.7,
-      "students": 1560,
-      "price": 79,
-      "oldPrice": 119,
-      "image": "https://img.freepik.com/free-photo/marketing-strategy-planning-strategy-concept_53876-42950.jpg",
-    },
-    {
-      "id": "4",
-      "title": "React Avancé - Les Hooks",
-      "category": "DÉVELOPPEMENT",
-      "instructor": "Ahmed Ben Ali",
-      "rating": 4.8,
-      "students": 1240,
-      "price": 89,
-      "oldPrice": 129,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png",
-    },
-    {
-      "id": "5",
-      "title": "Gestion de Projet Agile",
-      "category": "BUSINESS",
-      "instructor": "Nadia Boukadida",
-      "rating": 4.9,
-      "students": 980,
-      "price": 85,
-      "oldPrice": 125,
-      "image": "https://img.freepik.com/free-vector/scrum-method-concept-illustration_114360-1548.jpg",
-    },
-    {
-      "id": "6",
-      "title": "Python & Data Science",
-      "category": "DÉVELOPPEMENT",
-      "instructor": "Leila Mansour",
-      "rating": 4.8,
-      "students": 2100,
-      "price": 99,
-      "oldPrice": 149,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/800px-Python-logo-notext.svg.png",
-    }
+  final List<String> _categories = [
+    "Tout",
+    "Design",
+    "Développement",
+    "Business",
+    "Marketing",
   ];
 
-  // --- LOGIQUE DE FILTRAGE ---
-  List<Map<String, dynamic>> get _filteredCourses {
-    return _allCourses.where((course) {
-      // 1. Filtre Recherche (insensible à la casse)
-      final matchesSearch = course['title'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      // 2. Filtre Catégorie
-      // Note : Dans les données, les catégories sont en MAJUSCULES (ex: DESIGN), 
-      // donc on compare en mettant tout en majuscules pour être sûr.
+  final List<String> _sortOptions = [
+    "Par défaut",
+    "Prix croissant",
+    "Prix décroissant",
+    "Plus populaire",
+  ];
+
+  // --- LOGIQUE DE TRI ET FILTRE ---
+  List<Map<String, dynamic>> _filterAndSortCourses(
+      List<Map<String, dynamic>> allCourses) {
+    // 1. Filtrage (Recherche + Catégorie)
+    List<Map<String, dynamic>> result = allCourses.where((course) {
+      final title = course['title']?.toString().toLowerCase() ?? '';
+      final matchesSearch = title.contains(_searchQuery.toLowerCase());
+
       bool matchesCategory = true;
       if (_selectedCategory != "Tout") {
-        matchesCategory = course['category'].toString().toUpperCase() == _selectedCategory.toUpperCase();
+        final cat = course['category']?.toString().toUpperCase() ?? '';
+        matchesCategory = cat == _selectedCategory.toUpperCase();
       }
 
       return matchesSearch && matchesCategory;
     }).toList();
+
+    // 2. Tri (Prix, Popularité)
+    switch (_selectedSort) {
+      case "Prix croissant":
+        result.sort((a, b) =>
+            ((a['price'] ?? 0) as num).compareTo((b['price'] ?? 0) as num));
+        break;
+      case "Prix décroissant":
+        result.sort((a, b) =>
+            ((b['price'] ?? 0) as num).compareTo((a['price'] ?? 0) as num));
+        break;
+      case "Plus populaire":
+        result.sort((a, b) {
+          final ratingDiff =
+              ((b['rating'] ?? 0) as num).compareTo((a['rating'] ?? 0) as num);
+          if (ratingDiff != 0) return ratingDiff;
+          return ((b['students'] ?? 0) as num)
+              .compareTo((a['students'] ?? 0) as num);
+        });
+        break;
+      case "Par défaut":
+      default:
+        break;
+    }
+
+    return result;
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayCourses = _filteredCourses;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF5F7FA), // Fond gris très clair
       appBar: AppBar(
-        title: const Text("Catalogue des Cours", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Catalogue des Cours",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Column(
         children: [
-          // --- ZONE DE RECHERCHE & FILTRES ---
+          // --- ZONE DE FILTRES (Blanc) ---
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             color: Colors.white,
             child: Column(
               children: [
-                // 1. Barre de recherche
+                // 1. Barre de recherche (Style arrondi gris)
                 TextField(
                   onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
+                    setState(() => _searchQuery = value);
                   },
                   decoration: InputDecoration(
-                    hintText: "Rechercher un cours (ex: React, Design...)",
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    hintText: "Rechercher un cours...",
+                    hintStyle: TextStyle(color: Colors.grey[500]),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: const Color(
+                        0xFFF3F4F6), // Gris clair comme sur la photo
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 12),
 
-                // 2. Filtres Horizontaux (Chips)
-                SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      final category = _categories[index];
-                      final isSelected = _selectedCategory == category;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: ChoiceChip(
-                          label: Text(category),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedCategory = category;
-                            });
-                          },
-                          selectedColor: const Color(0xFF6C63FF),
-                          backgroundColor: Colors.grey[200],
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          showCheckmark: false,
+                // 2. Ligne Catégories + Tri
+                Row(
+                  children: [
+                    // Liste horizontale des catégories
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _categories.map((cat) {
+                            final isSelected = _selectedCategory == cat;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: ChoiceChip(
+                                label: Text(cat),
+                                selected: isSelected,
+                                onSelected: (_) {
+                                  setState(() => _selectedCategory = cat);
+                                },
+                                // Couleurs exactes de la photo (Violet si sélectionné, Gris sinon)
+                                selectedColor: const Color(0xFF6C63FF),
+                                backgroundColor: const Color(0xFFF3F4F6),
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                                showCheckmark:
+                                    false, // Pas de coche, juste la couleur
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide.none, // Pas de bordure
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Bouton Tri (Dropdown compact)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 0),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedSort,
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Colors.black54),
+                          items: _sortOptions
+                              .map((s) => DropdownMenuItem(
+                                    value: s,
+                                    child: Text(s,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black87)),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedSort = value);
+                          },
+                          dropdownColor: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          // --- GRILLE DES RÉSULTATS ---
+          // --- GRILLE DES COURS ---
           Expanded(
-            child: displayCourses.isEmpty
-                ? Center(
+            child: StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance.collection('courses').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                      child: Text("Erreur de chargement",
+                          style: TextStyle(color: Colors.red[300])));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // Récupération + Mapping ID
+                final allCourses = snapshot.data!.docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return {...data, 'id': doc.id};
+                }).toList();
+
+                // Filtrage Local
+                final courses = _filterAndSortCourses(allCourses);
+
+                if (courses.isEmpty) {
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
-                        const SizedBox(height: 10),
-                        Text("Aucun cours trouvé", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                        Icon(Icons.search_off,
+                            size: 64, color: Colors.grey[300]),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Aucun cours trouvé.",
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 16),
+                        ),
                       ],
                     ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: GridView.builder(
-                      itemCount: displayCourses.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.7, // Ratio ajusté pour bien voir les cartes
-                        crossAxisSpacing: 15,
-                        mainAxisSpacing: 15,
-                      ),
-                      itemBuilder: (context, index) {
-                        final course = displayCourses[index];
-                        // Utilisation du Widget CourseCard corrigé précédemment
-                        return GestureDetector(
-                          onTap: () {
-                             Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CourseDetailView(course: course),
-                              ),
-                            );
-                          },
-                          // Si votre CourseCard gère déjà le OnTap avec le bouton "Voir", 
-                          // le GestureDetector ici est optionnel mais permet de cliquer sur toute la carte.
-                          child: AbsorbPointer(
-                            absorbing: true, // Empêche les conflits si CourseCard a ses propres boutons, sinon mettre false
-                            child: CourseCard(course: course),
-                          ),
-                        );
-                      },
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GridView.builder(
+                    itemCount: courses.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.75, // Ajusté pour éviter l'overflow
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
                     ),
+                    itemBuilder: (context, index) {
+                      final course = courses[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CourseDetailView(course: course),
+                            ),
+                          );
+                        },
+                        child: CourseCard(course: course),
+                      );
+                    },
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),

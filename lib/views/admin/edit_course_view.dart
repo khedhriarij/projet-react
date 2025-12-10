@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../services/admin_service.dart'; // Import nécessaire
+import '../../models/course_model.dart'; // Import nécessaire
 
 class AddCourseView extends StatefulWidget {
   final Map<String, dynamic>? courseToEdit;
@@ -23,9 +25,6 @@ class _AddCourseViewState extends State<AddCourseView> {
   String _selectedLevel = "Intermédiaire";
   String _status = "Brouillon";
   
-  // On a supprimé _selectedPresetImage qui posait problème.
-  // On utilise directement _imageController.text pour gérer la sélection.
-
   int _promoPercentage = 0; // Pourcentage entier
 
   // --- DONNÉES STATIQUES ---
@@ -52,10 +51,16 @@ class _AddCourseViewState extends State<AddCourseView> {
       _imageController.text = c['image'] ?? '';
       
       // Gestion sécurisée des prix
-      _priceController.text = (c['oldPrice'] ?? c['price'] ?? 0).toString();
-      
-      if (c['oldPrice'] != null && c['price'] != null && c['price'] < c['oldPrice']) {
-        _promoPriceController.text = c['price'].toString();
+      _priceController.text = (c['price'] ?? 0).toString();
+      // Si price < oldPrice, alors oldPrice était le prix d'origine
+      if (c['originalPrice'] != null) {
+         _priceController.text = c['originalPrice'].toString();
+         if (c['price'] != null) {
+           _promoPriceController.text = c['price'].toString();
+         }
+      } else {
+         // Si pas de originalPrice, c'est juste le prix normal
+         _priceController.text = (c['price'] ?? 0).toString();
       }
 
       if (_categories.contains(c['category'])) {
@@ -88,6 +93,61 @@ class _AddCourseViewState extends State<AddCourseView> {
         _promoPercentage = 0;
       }
     });
+  }
+
+  // --- SAUVEGARDE DANS FIREBASE ---
+  Future<void> _saveCourse() async {
+    final title = _titleController.text;
+    final instructor = _instructorController.text;
+    final image = _imageController.text.isNotEmpty ? _imageController.text : "https://via.placeholder.com/300";
+    final description = _descController.text;
+    
+    final double originalPrice = double.tryParse(_priceController.text) ?? 0;
+    final double? promoPrice = double.tryParse(_promoPriceController.text);
+    
+    // Le prix final est le prix promo s'il existe, sinon le prix original
+    final double finalPrice = (promoPrice != null && promoPrice > 0) ? promoPrice : originalPrice;
+    final double? finalOriginalPrice = (promoPrice != null && promoPrice > 0) ? originalPrice : null;
+
+    if (title.isEmpty || instructor.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Titre et formateur obligatoires")));
+      return;
+    }
+
+    // Création de l'objet CourseModel
+    // Note: Pour un update, l'ID n'est pas dans le model mais passé à part
+    final newCourse = CourseModel(
+      id: widget.courseToEdit != null ? widget.courseToEdit!['id'] : '', 
+      title: title,
+      description: description,
+      price: finalPrice,
+      originalPrice: finalOriginalPrice,
+      category: _selectedCategory,
+      image: image,
+      instructor: instructor,
+      rating: widget.courseToEdit != null ? (widget.courseToEdit!['rating'] ?? 0.0) : 0.0,
+      students: widget.courseToEdit != null ? (widget.courseToEdit!['students'] ?? 0) : 0,
+      duration: "10h", // Valeur par défaut ou ajouter un champ
+      level: _selectedLevel,
+      discountPercentage: _promoPercentage > 0 ? _promoPercentage : null,
+    );
+
+    try {
+      if (widget.courseToEdit != null) {
+        // MODIFICATION
+        await AdminService().updateCourse(widget.courseToEdit!['id'], newCourse);
+        if(!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Cours modifié avec succès !")));
+      } else {
+        // AJOUT
+        await AdminService().addCourse(newCourse);
+        if(!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Cours créé avec succès !")));
+      }
+      Navigator.pop(context); // Retour
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erreur: $e")));
+    }
   }
 
   @override
@@ -146,21 +206,18 @@ class _AddCourseViewState extends State<AddCourseView> {
             _buildTextField(
               _imageController, 
               "/images/default-course.jpg",
-              onChanged: (val) => setState(() {}), // Rafraîchir pour l'aperçu et la sélection
+              onChanged: (val) => setState(() {}), 
             ),
             const SizedBox(height: 10),
             const Text("Ou choisir une image prédéfinie :", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 10),
 
-            // GRILLE IMAGES
             SizedBox(
               height: 110,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: _presetImages.entries.map((entry) {
-                  // On compare directement l'URL du champ texte avec l'URL de la liste
                   bool isSelected = _imageController.text == entry.value;
-                  
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -209,7 +266,6 @@ class _AddCourseViewState extends State<AddCourseView> {
             ),
             const SizedBox(height: 20),
 
-            // APERÇU
             if (_imageController.text.isNotEmpty)
               Center(
                 child: Container(
@@ -320,12 +376,7 @@ class _AddCourseViewState extends State<AddCourseView> {
                 const SizedBox(width: 15),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Cours enregistré avec succès !")),
-                      );
-                      Navigator.pop(context);
-                    },
+                    onPressed: _saveCourse, // APPEL DE LA FONCTION DE SAUVEGARDE
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6C63FF),
                       padding: const EdgeInsets.symmetric(vertical: 15),

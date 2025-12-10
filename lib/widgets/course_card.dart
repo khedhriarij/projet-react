@@ -1,191 +1,128 @@
 import 'package:flutter/material.dart';
-// Importez la page de détails pour la navigation
-import '../views/courses/course_detail_view.dart';
 
 class CourseCard extends StatelessWidget {
-  // On accepte les données sous forme de Map pour être compatible avec votre HomeView
   final Map<String, dynamic> course;
-
   const CourseCard({super.key, required this.course});
 
   @override
   Widget build(BuildContext context) {
+    final String category = course['category']?.toString() ?? '';
+    final String title = course['title']?.toString() ?? '';
+    final String instructor = course['instructor']?.toString() ?? '';
+    final num rating = course['rating'] ?? 0;
+    final num students = course['students'] ?? 0;
+    final num price = course['price'] ?? 0;
+    final num? oldPrice = course['oldPrice'];
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 1. IMAGE ET BADGE ---
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                image: DecorationImage(
-                  image: NetworkImage(course['image']),
-                  fit: BoxFit.cover, 
+          // Image du cours
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                course['image'] ?? '',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
                 ),
-              ),
-              child: Stack(
-                children: [
-                  // Badge "Populaire" (Simulé)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.amber, // Jaune comme sur la capture
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.star, size: 10, color: Colors.black),
-                          SizedBox(width: 4),
-                          Text(
-                            "Populaire",
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Badge Promo (Ex: -30%)
-                  if (course['oldPrice'] > course['price'])
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.pink,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          "-20%", // Vous pouvez calculer le vrai % si vous voulez
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                ],
               ),
             ),
           ),
 
-          // --- 2. INFORMATIONS ---
+          // Contenu texte
           Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Catégorie
+                // Badge catégorie
                 Text(
-                  course['category'].toString().toUpperCase(),
+                  category.toUpperCase(),
                   style: const TextStyle(
-                    color: Color(0xFF6C63FF), 
-                    fontSize: 10, 
+                    color: Colors.deepPurple,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                    fontSize: 11,
                   ),
                 ),
                 const SizedBox(height: 4),
-                
+
                 // Titre
                 Text(
-                  course['title'],
+                  title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                
+
                 // Formateur
                 Text(
-                  "Formateur : ${course['instructor']}",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  instructor,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
                 ),
-                
-                const SizedBox(height: 8),
-                
-                // Note (Étoiles)
+                const SizedBox(height: 6),
+
+                // Note + étudiants
                 Row(
                   children: [
-                    Row(
-                      children: List.generate(5, (index) {
-                        return Icon(
-                          index < (course['rating'] as num).round() ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
-                          size: 14,
-                        );
-                      }),
+                    const Icon(Icons.star, color: Colors.amber, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      rating.toString(),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "${course['rating']} (${course['students']})",
-                      style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                      "(${students.toInt()})",
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 10),
-                
-                // Prix et Bouton
+                const SizedBox(height: 8),
+
+                // Prix
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${course['oldPrice']} TND",
-                          style: const TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            color: Colors.grey,
-                            fontSize: 11,
-                          ),
+                    if (oldPrice != null)
+                      Text(
+                        "${oldPrice.toInt()} TND",
+                        style: const TextStyle(
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey,
+                          fontSize: 12,
                         ),
-                        Text(
-                          "${course['price']} TND",
-                          style: const TextStyle(
-                            color: Color(0xFFD32F2F), // Rouge prix
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    // --- BOUTON VOIR ---
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Navigation vers les détails
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CourseDetailView(course: course),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6C63FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        child: const Text("Voir", style: TextStyle(fontSize: 12)),
+                      ),
+                    if (oldPrice != null) const SizedBox(width: 6),
+                    Text(
+                      "${price.toInt()} TND",
+                      style: const TextStyle(
+                        color: Colors.deepPurple,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ],

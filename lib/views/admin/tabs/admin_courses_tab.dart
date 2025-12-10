@@ -1,6 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-// Importez le formulaire complet que je viens de vous donner
-// (Assurez-vous que le fichier s'appelle bien add_course_view.dart)
 import '../add_course_view.dart';
 
 class AdminCoursesTab extends StatefulWidget {
@@ -11,85 +10,92 @@ class AdminCoursesTab extends StatefulWidget {
 }
 
 class _AdminCoursesTabState extends State<AdminCoursesTab> {
-  // --- DONNÉES DES COURS (Identiques aux captures) ---
-  final List<Map<String, dynamic>> coursesData = [
-    {
-      "id": "1",
-      "title": "UI/UX Design avec Figma",
-      "category": "DESIGN",
-      "instructor": "Sarah Trabelsi",
-      "rating": 4.9,
-      "students": 890,
-      "price": 69,
-      "oldPrice": 99,
-      "image": "https://img.freepik.com/free-vector/gradient-ui-ux-background_23-2149052117.jpg",
-    },
-    {
-      "id": "2",
-      "title": "Adobe Photoshop Pro",
-      "category": "DESIGN",
-      "instructor": "Youssef Guedira",
-      "rating": 4.6,
-      "students": 750,
-      "price": 59,
-      "oldPrice": 89,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Adobe_Photoshop_CC_icon.svg/600px-Adobe_Photoshop_CC_icon.svg.png",
-    },
-    {
-      "id": "3",
-      "title": "Marketing Digital 2024",
-      "category": "BUSINESS",
-      "instructor": "Mohamed Dridi",
-      "rating": 4.7,
-      "students": 1560,
-      "price": 79,
-      "oldPrice": 119,
-      "image": "https://img.freepik.com/free-photo/marketing-strategy-planning-strategy-concept_53876-42950.jpg",
-    },
-    {
-      "id": "4",
-      "title": "React Avancé - Les Hooks",
-      "category": "DÉVELOPPEMENT",
-      "instructor": "Ahmed Ben Ali",
-      "rating": 4.8,
-      "students": 1240,
-      "price": 89,
-      "oldPrice": 129,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png",
-    },
-    {
-      "id": "5",
-      "title": "Gestion de Projet Agile",
-      "category": "BUSINESS",
-      "instructor": "Nadia Boukadida",
-      "rating": 4.9,
-      "students": 980,
-      "price": 85,
-      "oldPrice": 125,
-      "image": "https://img.freepik.com/free-vector/scrum-method-concept-illustration_114360-1548.jpg",
-    },
-    {
-      "id": "6",
-      "title": "Python & Data Science",
-      "category": "DÉVELOPPEMENT",
-      "instructor": "Leila Mansour",
-      "rating": 4.8,
-      "students": 2100,
-      "price": 99,
-      "oldPrice": 149,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/800px-Python-logo-notext.svg.png",
-    }
+  String _searchQuery = "";
+  String _selectedCategory = "Tout";
+  String _selectedSort = "Par défaut";
+
+  final List<String> _categories = [
+    "Tout",
+    "Design",
+    "Développement",
+    "Business",
+    "Marketing",
   ];
+
+  final List<String> _sortOptions = [
+    "Par défaut",
+    "Prix croissant",
+    "Prix décroissant",
+    "Plus populaire",
+  ];
+
+  // --- FONCTION DE SUPPRESSION ---
+  Future<void> _deleteCourse(String courseId) async {
+    try {
+      await FirebaseFirestore.instance.collection('courses').doc(courseId).delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Cours supprimé avec succès"), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur lors de la suppression: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // --------- FILTRAGE + TRI ----------
+  List<Map<String, dynamic>> _filterAndSort(
+    List<Map<String, dynamic>> allCourses,
+  ) {
+    List<Map<String, dynamic>> result = allCourses.where((course) {
+      final title = course['title']?.toString().toLowerCase() ?? '';
+      final matchesSearch = title.contains(_searchQuery.toLowerCase());
+
+      bool matchesCategory = true;
+      if (_selectedCategory != "Tout") {
+        final cat = course['category']?.toString().toUpperCase() ?? '';
+        matchesCategory = cat == _selectedCategory.toUpperCase();
+      }
+
+      return matchesSearch && matchesCategory;
+    }).toList();
+
+    switch (_selectedSort) {
+      case "Prix croissant":
+        result.sort((a, b) =>
+            ((a['price'] ?? 0) as num).compareTo((b['price'] ?? 0) as num));
+        break;
+      case "Prix décroissant":
+        result.sort((a, b) =>
+            ((b['price'] ?? 0) as num).compareTo((a['price'] ?? 0) as num));
+        break;
+      case "Plus populaire":
+        result.sort((a, b) {
+          final ratingDiff =
+              ((b['rating'] ?? 0) as num).compareTo((a['rating'] ?? 0) as num);
+          if (ratingDiff != 0) return ratingDiff;
+          return ((b['students'] ?? 0) as num)
+              .compareTo((a['students'] ?? 0) as num);
+        });
+        break;
+      case "Par défaut":
+      default:
+        break;
+    }
+
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      
-      // --- BOUTON AJOUTER (+) ---
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Ouvre le formulaire en mode CRÉATION (pas d'arguments)
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddCourseView()),
@@ -98,22 +104,145 @@ class _AdminCoursesTabState extends State<AdminCoursesTab> {
         backgroundColor: const Color(0xFF6C63FF),
         child: const Icon(Icons.add),
       ),
-      
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          itemCount: coursesData.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.68, // Ajustement pour les boutons
-            crossAxisSpacing: 15,
-            mainAxisSpacing: 15,
+      body: Column(
+        children: [
+          // Barre recherche + filtres
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Column(
+              children: [
+                TextField(
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Rechercher un cours...",
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 36,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _categories.length,
+                          itemBuilder: (context, index) {
+                            final cat = _categories[index];
+                            final selected = _selectedCategory == cat;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: ChoiceChip(
+                                label: Text(cat),
+                                selected: selected,
+                                onSelected: (_) {
+                                  setState(() => _selectedCategory = cat);
+                                },
+                                selectedColor: const Color(0xFF6C63FF),
+                                backgroundColor: Colors.grey[200],
+                                labelStyle: TextStyle(
+                                  color: selected ? Colors.white : Colors.black,
+                                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                                showCheckmark: false,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    DropdownButtonHideUnderline(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedSort,
+                          items: _sortOptions.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedSort = value);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          itemBuilder: (context, index) {
-            final course = coursesData[index];
-            return _buildAdminCourseCard(course);
-          },
-        ),
+
+          // Liste des cours depuis Firestore
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('courses').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red[700])));
+                  }
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final allCourses = snapshot.data!.docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>? ?? {};
+                    return {
+                      'id': doc.id,
+                      'title': data['title'] ?? '',
+                      'category': data['category'] ?? '',
+                      'instructor': data['instructor'] ?? '',
+                      'rating': data['rating'] ?? 0.0,
+                      'students': data['students'] ?? 0,
+                      'price': data['price'] ?? 0.0,
+                      'originalPrice': data['originalPrice'],
+                      'image': data['image'] ?? '',
+                      'level': data['level'] ?? '',
+                      'duration': data['duration'] ?? '',
+                      'description': data['description'] ?? '',
+                    };
+                  }).toList();
+
+                  final courses = _filterAndSort(allCourses);
+
+                  if (courses.isEmpty) {
+                    return Center(child: Text("Aucun cours trouvé.", style: TextStyle(color: Colors.grey[600])));
+                  }
+
+                  return GridView.builder(
+                    itemCount: courses.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.68,
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
+                    ),
+                    itemBuilder: (context, index) {
+                      final course = courses[index];
+                      return _buildAdminCourseCard(course);
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -128,30 +257,33 @@ class _AdminCoursesTabState extends State<AdminCoursesTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image
           Expanded(
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                image: DecorationImage(
-                  image: NetworkImage(course['image']),
-                  fit: BoxFit.cover, // Adapter selon l'image (contain pour logos)
-                ),
-                color: Colors.grey[50],
+                image: (course['image'] != null && course['image'].toString().isNotEmpty)
+                    ? DecorationImage(
+                        image: NetworkImage(course['image']),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                color: Colors.grey[300],
               ),
+              child: (course['image'] == null || course['image'].toString().isEmpty)
+                  ? const Center(child: Icon(Icons.image_not_supported, color: Colors.white))
+                  : null,
             ),
           ),
-          
-          // Contenu
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  course['category'],
+                  course['category'].toString().toUpperCase(),
                   style: const TextStyle(color: Colors.deepPurple, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   course['title'],
                   maxLines: 1,
@@ -163,20 +295,15 @@ class _AdminCoursesTabState extends State<AdminCoursesTab> {
                   "${course['price']} TND",
                   style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-                const SizedBox(height: 10),
-                
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // --- BOUTON MODIFIER ---
                     OutlinedButton.icon(
                       onPressed: () {
-                        // Ouvre le formulaire en mode ÉDITION (avec arguments)
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => AddCourseView(courseToEdit: course),
-                          ),
+                          MaterialPageRoute(builder: (_) => AddCourseView(courseToEdit: course)),
                         );
                       },
                       icon: const Icon(Icons.edit, size: 14, color: Color(0xFF6C63FF)),
@@ -186,14 +313,30 @@ class _AdminCoursesTabState extends State<AdminCoursesTab> {
                         side: const BorderSide(color: Color(0xFF6C63FF)),
                       ),
                     ),
-                    
-                    // --- BOUTON SUPPRIMER ---
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                       onPressed: () {
-                        // Simulation suppression
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Cours supprimé (Simulation)")),
+                        // Boîte de dialogue de confirmation
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("Confirmer"),
+                            content: const Text("Voulez-vous vraiment supprimer ce cours ?"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Annuler"),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _deleteCourse(course['id']); // Appel de la vraie suppression
+                                },
+                                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                child: const Text("Supprimer"),
+                              ),
+                            ],
+                          ),
                         );
                       },
                       padding: EdgeInsets.zero,

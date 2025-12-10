@@ -21,10 +21,11 @@ dependencies:
   shared_preferences: ^2.2.2
   
   # Network & Web (Pour Paymee)
-  http: ^1.1.0
-  webview_flutter: ^4.4.2
+  http: ^1.6.0
+  webview_flutter: ^4.13.0
 
   cupertino_icons: ^1.0.8
+  flutter_secure_storage: ^9.2.4
 
 dev_dependencies:
   flutter_test:
